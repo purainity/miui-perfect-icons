@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<group>
+    <text visible="if [ $LANGUAGE == zh-rCN ]; then echo 1; else echo 0; fi">
+        <slice bold="true" align="center" break="true" size="30">⚠️打开失败
+网络连接失败
+或CPU不受支持</slice>
+    </text>
+    <resource dir="file:///android_asset/local-scripts" />
+</group>
+
+<group>
+    <text visible="if [ $LANGUAGE == zh-rCN ]; then echo 1; else echo 0; fi">
+        <slice bold="true" break="true" size="14">未检测到网络或CPU不被支持，点击下方疑难解答获取更多信息
+可能的建议：
+· 检查WLAN或数据网络是否打开
+· 确保本应用有联网以及读写内部储存的权限
+· 可以尝试切换不同的网络，重新启动本应用
+· 以上都没有效果，可能是设备不支持
+</slice>
+    </text>
+</group>
+<group visible="if [ $LANGUAGE == zh-rCN ]; then echo 1; else echo 0; fi">
+    <text>
+        <title>查看使用指南/下载成品图标包</title>
+    </text>
+    <page link="https://www.yuque.com/pedeoz/icons/niid5q7957q3x1er">
+        <title>查看在线文档</title>
+        <desc>使用指南、EMUI10及以下旧版本图标下载</desc>
+    </page>
+</group>
+
+<group visible="if [ $LANGUAGE == zh-rCN ]; then echo 1; else echo 0; fi">
+    <text>
+        <title>其他选项</title>
+    </text>
+    <action>
+        <title>疑难解答</title>
+        <set>sh $START_DIR/script/network_check.sh</set>
+        <resource file="script/network_check.sh" />
+    </action>
+    <switch>
+    <title>加入Beta计划</title>
+         <desc>加入Beta计划后，脚本将在启动时自动更新到最新版本，将第一时间体验到最新特性，同时稳定性可能会下降。 </desc>
+        <get>
+        source theme_files/beta_config
+        echo $beta
+        </get>
+        <set>source local-scripts/misc/beta.sh</set>
+    </switch>
+    <action shell="hidden" confirm="true" id="@cleancache" reload="@cleancache">
+        <title>清理缓存</title>
+        <desc>当图标安装后出现奇怪的问题时，可以尝试清理缓存，清理后下次安装时会重新下载资源 </desc>
+        <summary sh="source local-scripts/misc/cache_size.sh"/>
+        <set>source local-scripts/misc/cleancache.sh</set>
+    </action>
+</group>
+
+<group>
+    <text visible="if [ $LANGUAGE == zh-rCN ]; then echo 1; else echo 0; fi">
+        <slice bold="true" break="true" size="12">注：MIUI从某个版本开始，对于非应用商店安装的应用，默认不授予联网权限，而是在app首次打开时进行弹窗询问。但是对于本app来说，联网弹窗时机过晚，首次启动时没有网络，导致无法加载页面。当赋予app联网权限后，再次启动即可。</slice>
+    </text>
+</group>
+
+
+
+<group>
+    <text visible="if [ $LANGUAGE == zh-rCN ]; then echo 0; else echo 1; fi">
+        <slice bold="true" align="center" break="true" size="30">⚠️
+No Network Detected or Not Support Your Divice</slice>
+    </text>
+    <resource dir="file:///android_asset/local-scripts" />
+</group>
+
+<group>
+    <text visible="if [ $LANGUAGE == zh-rCN ]; then echo 0; else echo 1; fi">
+        <slice bold="true" break="true" size="14">Please：
+· Check if you have your wifi or mobile data activated.
+· Ensure that the app has the permission to network and storage.
+· Try to connect to different kinds of network, and restart this app
+· Not Support Your Divice
+</slice>
+    </text>
+</group>
+<group visible="if [ $LANGUAGE == zh-rCN ]; then echo 1; else echo 0; fi">
+    <text>
+        <title>View the user guide/download the finished icon pack</title>
+    </text>
+    <page link="https://www.yuque.com/pedeoz/icons/niid5q7957q3x1er">
+        <title>View online documentation</title>
+        <desc>User Guide, EMUI10 and below old version icon download</desc>
+    </page>
+</group>
+<group visible="if [ $LANGUAGE == zh-rCN ]; then echo 0; else echo 1; fi">
+    <action>
+        <title>Problem check</title>
+        <set>sh $START_DIR/script/network_check.sh</set>
+        <resource file="script/network_check.sh" />
+    </action>
+     <switch>
+     <title>Beta version</title>
+         <desc>When in beta version, the scripts will automatically update itself, and you will experience the latest features, but with lower stability.</desc>
+        <get>
+        source theme_files/beta_config
+        echo $beta
+        </get>
+        <set>source local-scripts/misc/beta.sh</set>
+    </switch>
+    <action shell="hidden" confirm="true" id="@cleancache" reload="@cleancache">
+        <title>Clear cache</title>
+        <desc>If there's any error while installing, try to clear cache.</desc>
+        <summary sh="source local-scripts/misc/cache_size.sh"/>
+        <set>source local-scripts/misc/cleancache.sh</set>
+    </action>
+</group>
+
+<group>
+    <text visible="if [ $LANGUAGE == zh-rCN ]; then echo 0; else echo 1; fi">
+        <slice bold="true" break="true" size="12">Notice that in recent version of MIUI, apps that are not installed in APP Store have no access to network by default, so it might be normal to see this page if it's the first launch of this app. Restart this app after you enable the network permission.</slice>
+    </text>
+</group>

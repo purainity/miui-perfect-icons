@@ -1,0 +1,89 @@
+<resources>
+    <!--重要内容，谨慎修改-->
+    <string name="kr_script_config">kr-script.conf</string>
+
+    <!--是否强制获取ROOT-->
+    <bool name="force_root">false</bool>
+    <bool name="is_dark">false</bool>
+
+    <string name="app_name">Perfect Icon Project</string>
+    <string name="shell_executor">Shell executor</string>
+    <string name="cannot_get_root_access">Cannot get root access!</string>
+    <string name="execute_success">Execute success!</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="custom">Customise</string>
+    <string name="switchs">Switches</string>
+    <string name="btn_exit">Exit</string>
+    <string name="btn_hide">Hide</string>
+    <string name="float_monitor_tips">Double tap to close or long press to drag.</string>
+    <string name="permission_float">Please allow the \"display over other apps\" permission.</string>
+    <string name="please_wait">Please wait...</string>
+    <string name="load_ratio">Load: </string>
+    <string name="mhz">Mhz</string>
+    <string name="core">Core</string>
+    <string name="title_activity_action_page">Action page</string>
+
+    <string name="system_ram">RAM</string>
+    <string name="hardware_ram">Hardware RAM</string>
+    <string name="swap">Swap</string>
+    <string name="total_load">Total load</string>
+    <string name="core_load">Core load</string>
+    <string name="core_details">Core details</string>
+
+    <string name="tab_home">Home</string>
+    <string name="tab_favorites">Favorites</string>
+    <string name="tab_pages">All</string>
+
+    <string name="monitor_laod">Load: %d%%</string>
+    <string name="monitor_core_count">%d Core</string>
+    <string name="monitor_cache_cleared">Cache cleared.</string>
+    <string name="monitor_ram_cleared">RAM cleared.</string>
+
+    <string name="btn_copy">Copy the output</string>
+    <string name="copy_success">Copy success.</string>
+    <string name="copy_fail">Copy failed...</string>
+    <string name="btn_retry">Retry</string>
+
+    <string name="pio_starting">STARTING</string>
+    <string name="pop_before_start">Preparing to start the app...</string>
+    <string name="pop_started">Started.</string>
+    <string name="pio_permission_checking">Permission checking...</string>
+    <string name="error_root">Cannot get ROOT access, some functions are not available.</string>
+    <string name="error_su_timeout">ROOT authorization timeout, please check your ROOT manager.</string>
+    <string name="transparent_ui">Transparent UI</string>
+    <string name="title_activity_file_selector">Please select a file...</string>
+    <string name="title_activity_folder_selector">Please select a folder by long press...</string>
+
+    <string name="power_shutdown">Power off</string>
+    <string name="power_reboot">Reboot</string>
+    <string name="power_hot_reboot">Soft reboot</string>
+    <string name="power_fastboot">Fastboot mode</string>
+    <string name="power_recovery">Recovery mode</string>
+    <string name="power_emergency">9008 (EDL)</string>
+    <string name="power_menu">Please select one...</string>
+
+    <string name="power_shutdown_cmd">sync;svc power shutdown || reboot -p;</string>
+    <string name="power_reboot_cmd">sync;svc power reboot || reboot;</string>
+    <string name="power_hot_reboot_cmd">sync;am restart || busybox killall system_server;</string>
+    <string name="power_fastboot_cmd">sync;reboot bootloader;</string>
+    <string name="power_recovery_cmd">sync;reboot recovery;</string>
+    <string name="power_emergency_cmd">sync;reboot edl;</string>
+
+    <string name="about_version">[versionname]</string>
+    <string name="about_appname">Perfect Icon Project</string>
+    <string name="about_contributors">Contributors</string>  
+    <string name="engine_version_name">Powered By Kr-Script</string>
+    <string name="about_develpoer">Development Team</string>
+    <string name="about_develpoer_mumber">@PedroZ @ZQDesigned @Yife_Playte @余空_YuK</string>
+    <string name="about_maker">Icons and Themes Maker </string>
+    <string name="about_maker_mumber">@PedroZ @Yife_Playte @潮留美海かり @余空_YuK @Mastiff_Li @Eirperuier @艾欧利娅 @叡煜 @兰博教育 @扫地的喵 @HeMing505 @huoyiming @与病共存 @三滴 @Shahzaib_Ahmed</string>
+    <string name="about_supporter">Themes Authorizer and Technical Supporter</string>
+    <string name="about_authorizer_mumber">@江户川Conan @JellyBeans @栗子汤圆Ria</string>
+    <string name="about_supporter_mumber">@相见即是缘 @薛定谔の鼠</string>
+    <string name="about_thanks">Express Gratitude</string>
+    <string name="about_thanks_mumber">@嘟嘟斯基 @Yife_Playte</string>
+    <string name="about_donation">Donation List</string>
+    <string name="about_donation_mumber">@cnzt66 @E.Ming @heming505 @胡歌_Jay @嘉然今天吃烤串 @禁止吸血 @JKL_0124 @空 @李宗财 @你的瓦龙 @VAY冬冬 @阳阳兮 @樱素华丶</string>
+    <string name="xposed_desc">Force enable perfect icon for MIUI</string>
+</resources>

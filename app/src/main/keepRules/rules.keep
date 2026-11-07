@@ -1,0 +1,17 @@
+# Add project specific R8 rules here.
+# AGP will combine all keep rule files in src/main/keepRules to pass to R8
+#
+# For more details, see
+#   https://d.android.com/r/tools/r8/keep-rules
+
+# If your project uses WebView with JS, uncomment the following
+# and specify the fully qualified class name to the JavaScript interface
+# class:
+#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
+#   public *;
+#}
+
+# 兼容曾出现的 release 启动 IllegalAccessError，待完整实机验证后再评估收窄或移除
+# 保留存活的 Kotlin 类名，未使用的类仍可被移除
+-keepnames class kotlin.**
+-keepnames class kotlinx.**

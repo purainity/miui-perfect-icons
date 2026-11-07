@@ -1,0 +1,73 @@
+<group>
+    <title>Settings</title>
+     <switch icon="../../pic/beta.png">
+     <title>Beta version</title>
+         <desc>When in beta version, the scripts will automatically update itself, and you will experience the latest features, but with lower stability.</desc>
+        <get>
+        source theme_files/beta_config
+        echo $beta
+        </get>
+        <set>source local-scripts/misc/beta.sh</set>
+    </switch>
+    <action shell="hidden" confirm="true" id="@cleancache" reload="@cleancache" icon="../../pic/clean.png">
+        <title>Clear cache</title>
+        <desc>If there's any error while installing, try to clear cache.</desc>
+        <summary sh="source local-scripts/misc/cache_size.sh"/>
+        <set>source local-scripts/misc/cleancache.sh</set>
+    </action>
+</group>
+
+<group>
+    <text>
+    <title>Server connection status</title>
+    </text>
+        <action>
+            <title>Check server connectivity</title>
+            <set>  
+curl -skLJo "$TEMP_DIR/link.ini" "https://miuiicons-generic.pkg.coding.net/icons/files/link.ini?version=latest"
+if [ -f $TEMP_DIR/link.ini ]; then
+  source $TEMP_DIR/link.ini
+  http_code="$(curl -I -s --connect-timeout 1 ${link_check} -w %{http_code} | tail -n1)"
+  if [ "$http_code" != null ]; then
+    if [[ ! $httpcode == *$http_code* ]]; then
+      echo "× Unable to connect to file storage server"
+      else
+      echo "√ Server connectivity is normal"
+    fi
+  else
+    echo "× An error occurred while connecting to the file storage server"
+  fi
+else
+  echo "× You cannot connect to the profile server"
+fi
+</set>
+        </action>
+    <page title="Server Status" link="https://status.pedroz.eu.org/status/icons"/>
+</group>
+
+<group>
+    <text>
+    <title>Tips</title>
+    </text>
+    <page title="Introduction to the Perfect Icon Project" link="https://www.yuque.com/pedeoz/icons/crit9tn6d1334zt0"/>
+    <page title="HyperOS/MIUI user's guidance" link="https://www.yuque.com/pedeoz/icons/er8ige3ldvc7wn1n"/>
+    <page title="HarmonyOS/EMUI user's guidance" link="https://www.yuque.com/pedeoz/icons/tui2csib0wm0l4lg"/>
+    <page title="Custom icon related issues" link="https://www.yuque.com/pedeoz/icons/bg668dqpli7brqgi"/>
+    <page title="Perfect icon adaptation guide" link="https://www.yuque.com/pedeoz/icons/ao7yvw37irgdghr6"/>
+    <page title="Version 3.0 update instructions" link="https://www.yuque.com/pedeoz/icons/xpqqtku1lkacpal4"/>
+    <page config="download.xml" title="Download related issues"/>
+</group>
+<group>
+    <title>Contact us</title>
+    <text>
+        <title>Github</title>
+        <slice break="true" size="13" bold="true" link="https://github.com/pzcn/Perfect-Icons-Completion-Project" u="true">Perfect-Icons-Completion-Project</slice>
+        <slice break="true" size="13" bold="true" link="https://github.com/pzcn/MIUI-Icons-APP" u="true">MIUI-Icons-APP</slice>
+        <slice break="true" size="13" bold="true" link="https://qm.qq.com/cgi-bin/qm/qr?k=_92-RGlaiz3Xm-9i8O3USqTSg29EYg44" u="true">QQ Group：561180493</slice>
+        <slice break="true" size="13" bold="true" link="https://t.me/miuiicons" u="true">Telegram Channel</slice>
+        <slice break="true" size="13" bold="true" link="https://t.me/miui_icons_dev" u="true">Telegram Group</slice>
+        <slice break="true" size="13" bold="true" link="https://iconsx.vercel.app/privacy.html" u="true">Privacy Agreement</slice>
+    </text>
+</group>
+<text><title>
+</title></text>

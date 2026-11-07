@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<group>
+    <text visible="source local-scripts/misc/announce_check.sh">
+        <title>公告</title>
+        <desc sh="cat 'theme_files/announce.txt' "/>
+    </text>
+</group>
+
+<group>
+    <text>
+        <title>更新</title>
+    </text>
+    <page config-sh="source local-scripts/misc/get_changelog.sh" icon="pic/changelog.png">
+        <title>更新日志及检查更新</title>
+        <desc>查看近期更新日志，检查更新，获取更新通知</desc>
+    </page>
+</group>
+
+<group>
+    <text>
+        <title>HyperOS/MIUI</title>
+    </text>
+    <page id="@install" icon="pic/xiaomi.png" visible="source local-scripts/misc/installer_check.sh" >
+        <config>install.xml</config>
+        <title>下载安装模块或mtz主题包</title>
+        <desc>HyperOS/MIUI系统可用</desc>
+    </page>
+    <page id="@install" icon="pic/xiaomi.png" visible="source local-scripts/misc/installer_check.sh norootcheck" >
+        <config>install.xml</config>
+        <title>下载模块或mtz主题包</title>
+        <desc>HyperOS/MIUI系统可用</desc>
+    </page>
+</group>
+
+<group>
+    <text>
+        <title>HarmonyOS/EMUI</title>
+    </text>
+    <page config="hwt.xml" title="下载hwt主题包" icon="pic/huawei.png" desc="HarmonyOS/EMUI11系统可用" before-read="source local-scripts/misc/hwt_init.sh" />
+</group>
+
+<group>
+    <text>
+        <title>其他</title>
+    </text>
+    <page config="page/about.xml" title="设置与帮助" desc="设置、一些说明、联系我们" icon="pic/about.png" />
+</group>

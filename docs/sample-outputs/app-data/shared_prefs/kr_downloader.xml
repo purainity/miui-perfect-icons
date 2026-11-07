@@ -1,0 +1,5 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="555">{&#10;  &quot;url&quot;: &quot;https:\/\/objectstorage.ap-seoul-1.oraclecloud.com\/n\/cnkkaulgjby7\/b\/icons\/o\/hyper\/iconsrepo.tar.xz&quot;,&#10;  &quot;taskAliasId&quot;: &quot;caf85eb1-aa3f-42e7-85d9-05fe10c54ad0&quot;,&#10;  &quot;absPath&quot;: &quot;\/storage\/emulated\/0\/Android\/data\/dev.miuiicons.pedroz\/files\/Download\/iconsrepo.tar.xz&quot;&#10;}</string>
+    <string name="65">{&#10;  &quot;url&quot;: &quot;https:\/\/objectstorage.ap-seoul-1.oraclecloud.com\/n\/cnkkaulgjby7\/b\/icons\/o\/miui\/iconsrepo.tar.xz&quot;,&#10;  &quot;taskAliasId&quot;: &quot;d330de3b-9d4e-4f84-8e7a-3692c469a68e&quot;,&#10;  &quot;absPath&quot;: &quot;\/storage\/emulated\/0\/Android\/data\/dev.miuiicons.pedroz\/files\/Download\/iconsrepo.tar.xz&quot;&#10;}</string>
+</map>

@@ -1,0 +1,74 @@
+<group>
+    <text>
+    <title>设置</title>
+    </text>
+    <switch icon="../pic/beta.png">
+     <title>加入Beta计划</title>
+         <desc>加入Beta计划后，脚本将在启动时自动更新到最新版本，将第一时间体验到最新特性。但是在测试新功能时，无法保证100%可用性。</desc>
+        <get>
+        source theme_files/beta_config
+        echo $beta
+        </get>
+        <set>source local-scripts/misc/beta.sh</set>
+    </switch>
+    <action shell="hidden" confirm="true" id="@cleancache" reload="@cleancache" icon="../pic/clean.png">
+        <title>清理缓存</title>
+        <desc>当图标安装后出现奇怪的问题时，可以尝试清理缓存，清理后下次安装时会重新下载资源 </desc>
+        <summary sh="source local-scripts/misc/cache_size.sh"/>
+        <set>source local-scripts/misc/cleancache.sh</set>
+    </action>
+</group>
+
+<group>
+    <text>
+    <title>网络状态</title>
+    </text>
+        <action>
+            <title>检查服务器连通性</title>
+            <set>  
+curl -skLJo "$TEMP_DIR/link.ini" "https://miuiicons-generic.pkg.coding.net/icons/files/link.ini?version=latest"
+if [ -f $TEMP_DIR/link.ini ]; then
+  source $TEMP_DIR/link.ini
+  http_code="$(curl -I -s --connect-timeout 1 ${link_check} -w %{http_code} | tail -n1)"
+  if [ "$http_code" != null ]; then
+    if [[ ! $httpcode == *$http_code* ]]; then
+      echo "× 无法连接到文件储存服务器"
+      else
+      echo "√ 服务器连通性正常"
+    fi
+  else
+    echo "× 连接到文件储存服务器过程中出现错误"
+  fi
+else
+  echo "× 您无法连接到配置文件服务器"
+fi
+</set>
+        </action>
+    <page title="查看服务器状态" link="https://status.pedroz.eu.org/status/icons"/>
+</group>
+
+<group>
+    <text>
+    <title>使用文档</title>
+    </text>
+    <page title="完美图标项目介绍" link="https://www.yuque.com/pedeoz/icons/crit9tn6d1334zt0"/>
+    <page title="HyperOS/MIUI 使用指南" link="https://www.yuque.com/pedeoz/icons/er8ige3ldvc7wn1n"/>
+    <page title="HarmonyOS/EMUI 使用指南" link="https://www.yuque.com/pedeoz/icons/tui2csib0wm0l4lg"/>
+    <page title="自定义图标使用指南" link="https://www.yuque.com/pedeoz/icons/bg668dqpli7brqgi"/>
+    <page title="完美图标适配指南" link="https://www.yuque.com/pedeoz/icons/ao7yvw37irgdghr6"/>
+    <page title="3.0版本更新说明" link="https://www.yuque.com/pedeoz/icons/xpqqtku1lkacpal4"/>
+    <page config="download.xml" title="下载相关问题"/>
+</group>
+<group>
+    <text>
+        <title>联系我们</title>
+        <slice break="true" size="13" bold="true" link="https://github.com/pzcn/Perfect-Icons-Completion-Project" u="true">完美图标Github地址</slice>
+        <slice break="true" size="13" bold="true" link="https://github.com/pzcn/MIUI-Icons-APP" u="true">APP Github地址</slice>
+        <slice break="true" size="13" bold="true" link="https://qm.qq.com/cgi-bin/qm/qr?k=_92-RGlaiz3Xm-9i8O3USqTSg29EYg44" u="true">QQ群：561180493</slice>
+        <slice break="true" size="13" bold="true" link="https://t.me/miuiicons" u="true">Telegram频道</slice>
+        <slice break="true" size="13" bold="true" link="https://t.me/miui_icons_dev" u="true">Telegram群组</slice>
+        <slice break="true" size="13" bold="true" link="https://iconsx.vercel.app/privacy.html" u="true">隐私协议</slice>
+    </text>
+</group>
+<text><title>
+</title></text>

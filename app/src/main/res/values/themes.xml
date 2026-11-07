@@ -1,0 +1,12 @@
+<resources>
+    <style name="Theme.MIUI完美图标计划" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- 窗口绘制页面底色，Activity 根布局无需再重复绘制同色背景。 -->
+        <item name="android:windowBackground">?attr/colorSurface</item>
+    </style>
+    <style name="Widget.PerfectIcons.Card.Group" parent="Widget.Material3.CardView.Filled">
+        <item name="cardBackgroundColor">?attr/colorSurfaceContainer</item>
+        <item name="cardPreventCornerOverlap">false</item>
+        <item name="cardUseCompatPadding">false</item>
+        <item name="android:stateListAnimator">@null</item>
+    </style>
+</resources>

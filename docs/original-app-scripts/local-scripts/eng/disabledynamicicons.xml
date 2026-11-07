@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<group>
+    <text>
+        <title>Dynamic icon disable list:</title>
+        <desc sh="source local-scripts/misc/get_denylist.sh list"/>
+    </text>
+</group>
+
+<group>
+        <text>
+            <title>Disable dynamic icons for some apps</title>
+            <desc>Select the apps you want to disable animated icons for below, and they will be automatically disabled during subsequent installation. Please choose as needed, if you need to disable all, please use the Disable All below, it is not recommended to use the Select All function in the list (it will reduce the installation efficiency). The list will show all apps, which does not mean that the apps that appear in the list use dynamic icons.
+Emphasize again, choose as needed, do not select all!</desc>
+        </text>
+        <action reload="page" shell="hidden" icon="pic/android.png">
+            <title>Select APP</title>
+            <desc>Supports multiple selection, select the app you want to disable and reinstall.</desc>
+            <param
+                name="package_name"
+                value-sh="source local-scripts/misc/get_denylist.sh sel"
+                type="app"
+                multiple="multiple"
+                options-sh="pm list package | cut -f2 -d ':'" />
+            <set>echo "$package_name" > theme_files/denylist</set>
+        </action>
+    </group>
+
+<group>
+    <text>
+        <title>Disable dynamic icons for all apps</title>
+        <desc>Clicking will disable all dynamic icons, and they will be automatically disabled during subsequent installation.</desc>
+    </text>
+        <action reload="page" shell="hidden" icon="pic/disable.png">
+            <title>Disable All</title>
+            <set>echo "all" > theme_files/denylist</set>
+        </action>
+</group>
+
+<group>
+        <action reload="page"  shell="hidden" icon="pic/clean.png">
+            <title>Clear disable list</title>
+            <desc>Click to restore the set disable status</desc>
+            <set>rm -rf theme_files/denylist</set>
+        </action>
+</group>
