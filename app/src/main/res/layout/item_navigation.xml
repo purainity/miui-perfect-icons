@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 导航行：图标 + 标题 + 副标题 + 尾随图标，配置卡与文档卡的公共行 -->
 <!-- 复用行不是 Activity 根布局，保留状态反馈背景 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"

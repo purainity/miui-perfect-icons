@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 二级页面分组卡片：每个功能分组一张 Filled 卡片，卡内为行列表 -->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
-    style="@style/Widget.PerfectIcons.Card.Group"
+    style="@style/Widget.MiuiPerfectIcons.Card.Group"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 

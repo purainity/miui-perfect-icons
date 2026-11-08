@@ -34,7 +34,7 @@ class AdapterUpdatesTest {
 
     @Test fun filteringUpdatesOnlyChangedRowsAndPreservesSelection() {
         // 复用 Activity 实际主题，否则独立加载的 Material 布局缺少主题属性
-        val context = ContextThemeWrapper(ApplicationProvider.getApplicationContext(), R.style.Theme_MIUI完美图标计划)
+        val context = ContextThemeWrapper(ApplicationProvider.getApplicationContext(), R.style.Theme_MiuiPerfectIcons)
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val selected = mutableSetOf("com.example.second")
             val adapter = AppSelectionAdapter(context.packageManager, selected) { }
@@ -66,7 +66,7 @@ class AdapterUpdatesTest {
 
     @Test fun refreshAndPaginationKeepHeaderAndUseGranularUpdates() {
         // 复用 Activity 实际主题，否则独立加载的 Material 布局缺少主题属性
-        val context = ContextThemeWrapper(ApplicationProvider.getApplicationContext(), R.style.Theme_MIUI完美图标计划)
+        val context = ContextThemeWrapper(ApplicationProvider.getApplicationContext(), R.style.Theme_MiuiPerfectIcons)
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val header = View(context)
             val adapter = UpdateLogAdapter(header) { }

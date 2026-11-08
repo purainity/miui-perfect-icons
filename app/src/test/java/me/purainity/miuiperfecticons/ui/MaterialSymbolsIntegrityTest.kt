@@ -9,7 +9,7 @@ class MaterialSymbolsIntegrityTest {
     @Test
     fun listedIconsMatchOfficialAssets() {
         // 校验 Google 官方 Material Symbols Outlined 24px 的原始资源
-        // 以下新增图标来自 google/material-design-icons 的 10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7。
+        // 以下新增图标来自 google/material-design-icons 的 10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7
         val expected = mapOf(
             "ic_delete_sweep" to "4288ae4bc24c88073ff231a47b41b50365c9bb1fd52d03d6da1209a43f01ab74",
             "ic_docs" to "56ae3941e206cb4dc3a899a4e1fe886a5279420bc48c33d94263278642ad6a8a",
@@ -25,6 +25,7 @@ class MaterialSymbolsIntegrityTest {
             "ic_back" to "cd1f5a1109c07c79ac3e52a9a1ae8ab14be7a3bff7f7bc3559f7088d60eca3aa",
             "ic_chevron" to "d3f53b271fdb2150775b4252bf46139c3ab5ca872802372a1089e6e1dd6f2a35",
             "ic_close" to "31644025d94b5a5637d75660ebdcb93c398f2620bfc12f7a7a9362965e271288",
+            "ic_code" to "fcfc955faa74c73a35e210fe5b6d7e0e074e391eb019fd6fb1d3a72428b9eee3",
             "ic_download" to "75f8b4dae0ef464f527f3adadde29a0d57e9875985d49f44df3585f60fe9fbf4",
             "ic_extension" to "bc0fec4d13b0f4e71c3ac6209c5f323932f8f6011d8eb181980b7cc0511670bb",
             "ic_external" to "12b1dfc1be3b858a2d22781dcae341ec180834266198022b2f63494f7aab9c04",
@@ -46,7 +47,7 @@ class MaterialSymbolsIntegrityTest {
             "ic_qq" to "8811486e917e22582eced4373033a42710262a9af2c4bd39a7a240b99db7ff76",
         )
         val all = expected + remix
-        // 只保留既有清单的校验，不要求每个新增图标都加入完整性清单。
+        // 只保留既有清单的校验，不要求每个新增图标都加入完整性清单
         all.forEach { (name, expectedDigest) ->
             val icon = File("src/main/res/drawable/$name.xml")
             val digest = MessageDigest.getInstance("SHA-256").digest(icon.readBytes())

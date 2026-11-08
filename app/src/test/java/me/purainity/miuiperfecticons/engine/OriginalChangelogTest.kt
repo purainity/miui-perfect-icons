@@ -28,7 +28,7 @@ class OriginalChangelogTest {
         assertNull(result[1].url)
     }
 
-    // Pair 是期望值，而 splitMessage 的结果是实际值。
+    // Pair 是期望值，而 splitMessage 的结果是实际值
     @Suppress("KotlinMisorderedAssertEqualsArguments")
     @Test fun separatesFirstLineFromOptionalDetails() {
         assertEquals("单行更新" to null, OriginalChangelog.splitMessage("单行更新"))

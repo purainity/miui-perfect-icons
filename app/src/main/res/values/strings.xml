@@ -6,7 +6,7 @@
     <string name="btn_cancel">取消</string>
     <string name="btn_ok">确定</string>
     <string name="btn_continue">继续</string>
-    <string name="action_retry">重试</string>
+    <string name="btn_retry">重试</string>
     <string name="open_link_failed">无法打开链接，请检查是否已安装浏览器</string>
     <string name="open_link_failed_simple">无法打开链接</string>
 
@@ -195,7 +195,7 @@
     <string name="thanks_donors_title">捐赠名单</string>
     <string name="thanks_donors">\@cnzt66 @E.Ming @heming505 @胡歌_Jay @嘉然今天吃烤串 @禁止吸血 @JKL_0124 @空 @李宗财 @你的瓦龙 @VAY冬冬 @阳阳兮 @樱素华丶</string>
     <string name="licenses_group">开源许可</string>
-    <string name="open_source_project_title">%1$s - %2$s</string>
+    <string name="licenses_project_meta">%1$s · %2$s</string>
 
     <!-- 任务：通知与状态 -->
     <string name="task_channel">图标资源任务</string>

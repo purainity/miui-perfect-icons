@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 应用选择行：应用图标 + 应用名 + 包名 + 复选框 -->
 <!-- 复用行不是 Activity 根布局，保留状态反馈背景 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"

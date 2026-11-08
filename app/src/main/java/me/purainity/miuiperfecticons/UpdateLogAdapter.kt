@@ -18,7 +18,7 @@ class UpdateLogAdapter(private val header: View, private val open: (String) -> U
         val previous = (0 until pages.visibleCount).map(pages::item)
         pages.replace(entries)
         val current = (0 until pages.visibleCount).map(pages::item)
-        // Keep the header at position 0; log entries have no guaranteed unique ID.
+        // 表头固定在位置 0；日志条目没有可用的唯一标识
         DiffUtil.calculateDiff(object : DiffUtil.Callback() {
             override fun getOldListSize() = previous.size + 1
             override fun getNewListSize() = current.size + 1

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 主题选择页：19 种主题单选列表，点击某项立即选中保存并返回 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -26,7 +27,7 @@
             android:paddingEnd="16dp"
             android:paddingBottom="24dp">
             <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.PerfectIcons.Card.Group"
+                style="@style/Widget.MiuiPerfectIcons.Card.Group"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
                 <LinearLayout

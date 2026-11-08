@@ -50,7 +50,6 @@ import me.purainity.miuiperfecticons.ui.CustomDirectoryLocation
 import me.purainity.miuiperfecticons.ui.OpenSourceProjects
 import me.purainity.miuiperfecticons.ui.applySystemBarInsets
 import me.purainity.miuiperfecticons.ui.exposeSelectionState
-import java.io.File
 import java.text.Collator
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -455,7 +454,7 @@ class FeatureActivity : AppCompatActivity() {
         val version = packageManager.getPackageInfo(packageName, 0)
         header.appVersion.text = getString(R.string.about_version, version.versionName, version.longVersionCode)
         val project = untitledGroup(topMargin = 16)
-        action(project, R.drawable.ic_github, getString(R.string.about_project_github), "https://github.com/purainity/miui-perfect-icons", external = true) { open("https://github.com/purainity/miui-perfect-icons") }
+        action(project, R.drawable.ic_code, getString(R.string.about_project_github), "https://github.com/purainity/miui-perfect-icons", external = true) { open("https://github.com/purainity/miui-perfect-icons") }
         action(project, R.drawable.ic_person, getString(R.string.about_author), "https://github.com/purainity", external = true) { open("https://github.com/purainity") }
         // 同作者的主题扩展模块，提供主题破解等增强功能
         action(project, R.drawable.ic_extension, getString(R.string.about_theme_extension), getString(R.string.about_theme_extension_sub), external = true) { open("https://github.com/purainity/miui-theme-extension") }
@@ -473,9 +472,9 @@ class FeatureActivity : AppCompatActivity() {
         val licenses = group(getString(R.string.licenses_group))
         OpenSourceProjects.all.forEach { project ->
             val row = ItemOpenSourceProjectBinding.inflate(layoutInflater, licenses, true)
-            row.title.text = getString(R.string.open_source_project_title, project.name, project.developer)
+            row.title.text = project.name
+            row.projectMeta.text = getString(R.string.licenses_project_meta, project.developer, project.license)
             row.projectUrl.text = project.url
-            row.license.text = project.license
             row.root.isFocusable = true
             row.root.setOnClickListener { open(project.url) }
         }

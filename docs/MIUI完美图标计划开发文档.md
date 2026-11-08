@@ -24,20 +24,46 @@
 
 ---
 
-## 2. 硬性技术规范
+## 2. 技术选型
 
-| 项 | 规范 |
+### 2.1 技术栈
+
+| 项 | 选型 |
 |---|---|
-| 系统要求 | **minSdk 29（Android 10.0）**，targetSdk 跟进当前最新稳定版 |
-| 语言 | Kotlin |
-| UI | **XML Views + ViewBinding + Material Design 3 控件**；界面全部按 Material Design 3 重新设计，不照抄原版 kr-script 的视觉样式，仅保留其信息架构与文案语料 |
-| 禁止 | DataBinding；`com.android.support.*` 旧支持库；任何携带 so 原生库的依赖；任何需要 root 权限的功能 |
-| 数据源 | 图标资源仅取 GitHub（api.github.com + raw.githubusercontent.com），不使用任何第三方 CDN 或镜像；公告沿用原版接口（§9.1） |
+| 语言 | 纯 Kotlin，单模块 `:app` |
+| UI | XML Views + ViewBinding + Material Design 3 控件 |
+| minSdk | 29（Android 10.0） |
+| targetSdk | 跟进当前最新稳定版（当前 37） |
+| 数据源 | 图标资源仅取 GitHub（`api.github.com` + `raw.githubusercontent.com`）；公告沿用原版接口（§9.1） |
 | 界面语言 | 中文 |
 
-minSdk 取 29 的依据：产物面向 HyperOS / MIUI 12+，其本身要求 Android 10+，生成器与目标设备天然重合；同时免去旧版存储权限与旧通知兼容分支，MediaStore / SAF / 前台服务 / 深色模式全部走现代路径。
+### 2.2 选型依据
 
-### 2.1 Release 构建与优化
+**minSdk——取 29（Android 10.0）：**
+
+- 产物面向 HyperOS / MIUI 12+，其本身要求 Android 10+，生成器与目标设备天然重合
+- 免去旧版存储权限与旧通知兼容分支，MediaStore / SAF / 前台服务 / 深色模式全部走现代路径
+
+**UI——XML Views + ViewBinding + Material Design 3：**
+
+- 界面全部按 Material Design 3 重新设计，不照抄原版 kr-script 的视觉样式，仅保留其信息架构与文案语料
+
+**数据源——仅 GitHub：**
+
+- 图标资源仓库仍在 GitHub 上持续更新，清单比对、下载、装配全部在本机完成，不依赖任何自有服务器
+- 原版 App 的网络门禁一旦失败即终止全部流程；本项目不做连通性预检，失败由任务级重试兜底
+
+### 2.3 硬性红线
+
+| 项 | 禁止 |
+|---|---|
+| UI 框架 | Compose；DataBinding |
+| 依赖 | `com.android.support.*` 旧支持库；任何携带 so 原生库的依赖 |
+| 内置文件 | git / curl / busybox / zip 等可执行二进制（仅作为 `docs/original-app-scripts/` 中的行为参考，不随 App 分发） |
+| 数据源 | 任何第三方 CDN 或镜像；连通性预检逻辑 |
+| 权限 | 任何需要 root 权限的功能 |
+
+### 2.4 Release 构建与优化
 
 - Release 通过 `optimization.enable = true` 启用 R8 代码与资源优化，不限制 `packageScope`，优化范围覆盖整个应用及其依赖；默认 Android 平台保留规则与依赖提供的规则仍由构建工具合并
 - 应用自定义规则放在 `app/src/main/keepRules/rules.keep`，适用于包含 main 源集且启用 R8 的变体，不再通过 `proguardFiles` 接入旧的 `proguard-rules.pro`
@@ -371,6 +397,8 @@ themeid={主题ID}
 | 页面容器 | 每个功能分组 = 一张 `MaterialCardView`（Filled 样式），卡内为 ListItem 列表 |
 | 任务面板 | `BottomSheetDialogFragment`（带 DragHandle，标题 + 状态文本 + 进度，§10.6） |
 | 文字提示 | 卡片正文 |
+
+二级页面分组卡片由 `view_feature_group.xml` 定义，使用 `Widget.MiuiPerfectIcons.Card.Group` 样式，并仅声明布局中使用的 Android 命名空间。
 
 ### 8.3 布局骨架
 

@@ -257,7 +257,7 @@ class TaskService : Service() {
         if (failure != null) {
             val retry = Intent(this, TaskService::class.java).putExtra(EXTRA_KIND, kind)
             val pending = PendingIntent.getForegroundService(this, 4, retry, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-            builder.addAction(0, getString(R.string.action_retry), pending)
+            builder.addAction(0, getString(R.string.btn_retry), pending)
         }
         return builder.build()
     }

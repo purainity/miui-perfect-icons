@@ -25,7 +25,7 @@ class ActivityBackgroundTest {
             }
             val themed = ContextThemeWrapper(
                 context.createConfigurationContext(configuration),
-                R.style.Theme_MIUI完美图标计划,
+                R.style.Theme_MiuiPerfectIcons,
             )
             val windowAttributes = themed.obtainStyledAttributes(intArrayOf(android.R.attr.windowBackground))
             val windowBackground = try {

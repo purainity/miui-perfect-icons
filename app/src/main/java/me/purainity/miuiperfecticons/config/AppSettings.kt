@@ -41,7 +41,7 @@ class AppSettings(context: Context) {
     /** 反射读取 ro.miui.ui.version.code，读取失败或非数字时返回 null */
     val systemVersion: String? by lazy {
         try {
-            // 保留现有 MIUI 版本识别；私有 API 不可用时仍沿用默认值与手动开关。
+            // 保留现有 MIUI 版本识别；私有 API 不可用时仍沿用默认值与手动开关
             @SuppressLint("PrivateApi")
             val properties = Class.forName("android.os.SystemProperties")
             (properties.getMethod("get", String::class.java).invoke(null, "ro.miui.ui.version.code") as? String)

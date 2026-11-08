@@ -15,7 +15,7 @@ class IconThemesTest {
         assertEquals("EMUI-未来之翼", IconThemes.find("Reconstruction").displayName)
     }
 
-    // JUnit 4 的 assertEquals 参数顺序是 expected、actual。
+    // JUnit 4 的 assertEquals 参数顺序是 expected、actual
     @Suppress("KotlinMisorderedAssertEqualsArguments")
     @Test
     fun unknownOrMissingThemesFallBackToDefault() {

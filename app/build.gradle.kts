@@ -9,6 +9,20 @@ val releaseKeyPassword = providers.gradleProperty("ANDROID_RELEASE_KEY_PASSWORD"
 
 val releaseSigningAvailable = releaseStoreFile?.isFile == true && !releaseStorePassword.isNullOrBlank() && !releaseKeyAlias.isNullOrBlank() && !releaseKeyPassword.isNullOrBlank()
 
+// 构建开始时输出签名环境变量状态，未设置时按请求的变体只提示对应一句
+val requestedTasks = gradle.startParameter.taskNames
+val wantsDebug = requestedTasks.any { it.contains("debug", ignoreCase = true) }
+val wantsRelease = requestedTasks.any { it.contains("release", ignoreCase = true) }
+if (releaseSigningAvailable) {
+    logger.lifecycle("Signing environment variables are set, APKs will be signed")
+} else if (wantsDebug && !wantsRelease) {
+    logger.lifecycle("Signing environment variables are not set, debug builds will use the default debug signing")
+} else if (wantsRelease && !wantsDebug) {
+    logger.lifecycle("Signing environment variables are not set, release builds will be unsigned")
+} else {
+    logger.lifecycle("Signing environment variables are not set, debug builds will use the default debug signing and release builds will be unsigned")
+}
+
 android {
     signingConfigs {
         if (releaseSigningAvailable) {

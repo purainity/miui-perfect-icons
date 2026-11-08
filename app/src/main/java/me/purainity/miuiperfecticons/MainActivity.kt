@@ -32,7 +32,6 @@ import me.purainity.miuiperfecticons.tasks.TaskLogDialog
 import me.purainity.miuiperfecticons.tasks.TaskRuntime
 import me.purainity.miuiperfecticons.tasks.TaskService
 import me.purainity.miuiperfecticons.tasks.TaskSnapshot
-import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
