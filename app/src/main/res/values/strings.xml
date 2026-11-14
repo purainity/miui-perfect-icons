@@ -96,7 +96,7 @@
     <string name="custom_rule_dynamic_title">动态图标</string>
     <string name="custom_rule_dynamic_body">整个包名目录连同内部结构一起并入动态图标</string>
     <string name="custom_rule_addon_title">高级附加</string>
-    <string name="custom_rule_addon_body">文件原样放入主题或模块根目录的 addons</string>
+    <string name="custom_rule_addon_body">模块产物置于根目录的 addons，安装时按文件名展平；MTZ 产物按文件名递归展平到根目录作为主题组件，子目录仅作分类；占用保留名、同名文件或 com.miui.home 附加非有效 zip 时报错中止</string>
     <string name="custom_directory_row">自定义目录</string>
     <string name="custom_directory_none">未选择</string>
     <string name="import_static_files">导入静态图标文件</string>

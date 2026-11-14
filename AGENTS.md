@@ -40,7 +40,7 @@ miui-perfect-icons/
 │   │   │   │   └── MaskDefaults.kt                # 遮罩默认值
 │   │   │   ├── engine/
 │   │   │   │   ├── GitHubRepository.kt            # Trees API 清单、raw 下载、blob SHA 增量
-│   │   │   │   ├── PackageAssembler.kt            # 与原版 pack() 等价的装配
+│   │   │   │   ├── PackageAssembler.kt            # 与原版 pack() 等价的装配（MTZ 分支含三处格式修正，见文档 §6.2）
 │   │   │   │   ├── DocumentStorage.kt             # SAF 读写
 │   │   │   │   ├── ArchivePacker.kt               # 存档打包
 │   │   │   │   ├── CacheContents.kt               # 缓存内容索引
@@ -70,10 +70,11 @@ miui-perfect-icons/
 
 ## 行为红线
 
-- 产物必须与原版逐文件一致（对照 `docs/sample-outputs/` 验收）；两条已核实的原版怪癖（MTZ 同样执行扁平 png 分离；denylist 过滤先于自定义图标导入）不得“顺手修正”
+- 模块产物必须与原版逐文件一致（对照 `docs/sample-outputs/` 验收）；已核实的原版怪癖（denylist 过滤先于自定义图标导入）不得“顺手修正”
+- MTZ 产物按修正后的正确 MTZ 格式生成（修正原版三处格式错误：高级附加按文件名递归展平到根作为主题组件、com.miui.home 为空 zip 且附加同名文件须为合法 zip、扁平 png 留在 icons 内不分离；依据分级与参考链接见开发文档 §6.2），模块逻辑不受修正影响
 - `app/src/main/assets/` 内脚本受 `TemplateIntegrityTest` 逐字节校验，不得改动内容与格式
 - 不引入：Compose、携带 so 原生库的依赖、内置 git/curl/busybox 等二进制、第三方 CDN 或镜像、连通性预检逻辑
-- MTZ 无实物对照样本，相关改动须依据原版脚本逐行推导复核
+- MTZ 无实物对照样本，相关改动须以开发文档 §6.2 为基准，并参照 PerfectIconsPacker 行为推导复核
 
 ## 代码与文档规范
 

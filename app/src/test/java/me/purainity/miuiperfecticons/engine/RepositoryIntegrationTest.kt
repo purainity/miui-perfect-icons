@@ -23,20 +23,25 @@ class RepositoryIntegrationTest {
         val repo = source!!
         val templates = File("src/main/assets")
         assertTrue(templates.isDirectory)
-        val expected = mutableMapOf<String, File>()
+        val layered = mutableMapOf<String, File>()
+        val flat = mutableMapOf<String, File>()
         fun overlay(dir: File, prefix: String) {
             if (!dir.isDirectory) return
-            dir.walkTopDown().filter { it.isFile }.forEach { expected[prefix + it.relativeTo(dir).invariantSeparatorsPath] = it }
+            dir.walkTopDown().filter { it.isFile }.forEach {
+                val path = prefix + it.relativeTo(dir).invariantSeparatorsPath
+                if (prefix == "res/drawable-xxhdpi/" && '/' !in it.relativeTo(dir).invariantSeparatorsPath && path.endsWith(".png")) {
+                    flat[it.relativeTo(dir).invariantSeparatorsPath] = it
+                } else {
+                    layered[path] = it
+                }
+            }
         }
         overlay(File(repo, "icons"), "res/drawable-xxhdpi/")
         overlay(File(repo, "themes/explore/icons"), "res/drawable-xxhdpi/")
         overlay(File(repo, "themes/explore/layer_animating_icons"), "layer_animating_icons/")
         overlay(File(repo, "themes/common/layer_animating_icons"), "layer_animating_icons/")
-        val flatPrefix = "res/drawable-xxhdpi/"
-        val flat = expected.filterKeys { it.startsWith(flatPrefix) && '/' !in it.removePrefix(flatPrefix) && it.endsWith(".png") }
-        flat.keys.forEach { expected.remove(it) }
-        expected["transform_config.xml"] = File(templates, "transform_config1.xml")
-        assertTrue(expected.size > 1000)
+        layered["transform_config.xml"] = File(templates, "transform_config1.xml")
+        assertTrue(layered.size > 1000)
         assertTrue(flat.isNotEmpty())
         val assembler = PackageAssembler(template = { File(templates, it).readBytes() })
         for (format in PackageFormat.entries) {
@@ -52,7 +57,13 @@ class RepositoryIntegrationTest {
             )
             assembler.assemble(repo, File(temporary.root, "work-$format"), output, options)
             ZipFile(output).use { outer ->
-                val remaining = expected.toMutableMap()
+                // 模块把扁平 png 分离到 miui_mod_icons，MTZ 把扁平 png 留在 icons 内平铺
+                val expectedIcons = if (format == PackageFormat.MODULE) {
+                    layered
+                } else {
+                    layered + flat.mapKeys { "res/drawable-xxhdpi/" + it.key }
+                }
+                val remaining = expectedIcons.toMutableMap()
                 ZipInputStream(outer.getInputStream(outer.getEntry("icons"))).use { icons ->
                     while (true) {
                         val entry = icons.nextEntry ?: break
@@ -62,20 +73,28 @@ class RepositoryIntegrationTest {
                     }
                 }
                 assertTrue("缺失文件：${remaining.keys.take(5)}", remaining.isEmpty())
-                flat.forEach { (path, file) ->
-                    val entry = outer.getEntry("miui_mod_icons/${path.removePrefix(flatPrefix)}")
-                    assertTrue("缺少扁平图标：$path", entry != null)
-                    assertArrayEquals(file.readBytes(), outer.getInputStream(entry).readBytes())
-                }
                 if (format == PackageFormat.MODULE) {
+                    flat.forEach { (name, file) ->
+                        val entry = outer.getEntry("miui_mod_icons/$name")
+                        assertTrue("缺少扁平图标：$name", entry != null)
+                        assertArrayEquals(file.readBytes(), outer.getInputStream(entry).readBytes())
+                    }
                     assertArrayEquals(File(templates, "customize.sh").readBytes(), outer.getInputStream(outer.getEntry("customize.sh")).readBytes())
                     assertEquals("#MAGISK\n", outer.getInputStream(outer.getEntry("META-INF/com/google/android/updater-script")).reader().readText())
                 } else {
-                    assertArrayEquals(File(repo, "addition/mtz/com.miui.home").readBytes(), outer.getInputStream(outer.getEntry("com.miui.home")).readBytes())
+                    assertTrue(outer.entries().toList().none { it.name.startsWith("miui_mod_icons") })
+                    assertArrayEquals(emptyEocd, outer.getInputStream(outer.getEntry("com.miui.home")).readBytes())
                     val description = File(repo, "addition/mtz/description.xml").readText().replace("themename", "MIUI探·界主题")
                     assertEquals(description, outer.getInputStream(outer.getEntry("description.xml")).reader().readText())
                 }
             }
         }
     }
+
+    /** 与 PackageAssembler 生成的 com.miui.home 空 zip 桩（裸 EOCD）逐字节一致 */
+    private val emptyEocd = byteArrayOf(
+        0x50, 0x4B, 0x05, 0x06, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    )
 }

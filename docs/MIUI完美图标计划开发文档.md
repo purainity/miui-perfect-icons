@@ -41,7 +41,7 @@
 
 **minSdk——取 29（Android 10.0）：**
 
-- 产物面向 HyperOS / MIUI 12+，其本身要求 Android 10+，生成器与目标设备天然重合
+- 产物面向 HyperOS / MIUI 12+，其本身要求 Android 10+，生成器与目标设备天然重合；完美图标特性自 MIUI 12 起由系统启动器引入，依赖系统内置图标与图标自身的 Adapted Icon 特性（上游仓库说明：https://github.com/pzcn/Perfect-Icons-Completion-Project ）
 - 免去旧版存储权限与旧通知兼容分支，MediaStore / SAF / 前台服务 / 深色模式全部走现代路径
 
 **UI——XML Views + ViewBinding + Material Design 3：**
@@ -62,6 +62,8 @@
 | 内置文件 | git / curl / busybox / zip 等可执行二进制（仅作为 `docs/original-app-scripts/` 中的行为参考，不随 App 分发） |
 | 数据源 | 任何第三方 CDN 或镜像；连通性预检逻辑 |
 | 权限 | 任何需要 root 权限的功能 |
+
+权限落地：Manifest 仅声明 `INTERNET`、`QUERY_ALL_PACKAGES`（应用选择页需列出全部已安装应用）与前台服务/通知相关权限；输出公共 Download 走 MediaStore（免存储权限）；输出目录与自定义图标目录走 SAF 一次性授权。
 
 ### 2.4 Release 构建与优化
 
@@ -148,17 +150,17 @@ App 私有数据备份中的 `miui/` 图标缓存（约 800MB，内含嵌有原�
 
 ### 3.5 实现要点（易错点）
 
-以下结论来自对 `module.sh` 的逐行分析与实物比对，实现时须注意：
+以下结论来自对 `module.sh` 的逐行分析、实物比对及 §6.2 所列官方文档与参考实现，实现时须注意：
 
 1. **两类主题名称**：界面显示名不带后缀（如 `MIUI经典`），装配用名称 = 显示名 + `主题`（如 `MIUI经典主题`）。后者用于产物文件命名、module.prop、mtz description 替换与导出日志（§4.4）。
 2. **module.prop 共 7 行**：`module.sh` 中另有一处向临时目录的 module.prop 追加 `iconsrepo=` 的语句，但该文件从未打入产物，属死代码，不复刻。
-3. **自定义图标“高级附加”（addons）位于产物根目录、与 icons 同级**（两种模式一致）——`addon()` 复制到打包根的 `addons/`，不在 icons 内。
-4. **扁平 png 分离对模块与 MTZ 两种模式均执行**：原版 `pack()` 以无参调用，函数内 `[ "$1" != mtz ]` 恒真；分离发生在全部 res 来源（基础库/主题/自定义）并入之后，分离出的产物根 `miui_mod_icons/` 同时包含主题与自定义的扁平静态图标（§5.2 步骤 7）。
-5. **denylist 过滤先于自定义图标导入**：自定义动态图标不受禁用列表约束，已禁用的包名可经自定义目录重新进入产物（§5.2 怪癖说明）。
+3. **自定义图标“高级附加”的位置与形态按产物区分**：模块侧位于产物根 `addons/`（原版 `addon()` 行为），安装时由 `customize.sh` 以 `unzip -oj` 按文件名展平进 `theme/default/`（通配符跨目录层级，已实验复核）；MTZ 侧在合并外壳后按同一语义递归展平到产物根（原版留在 `addons/` 目录，属原版错误，已修正）。展平规则、保留名与报错条件见 §6.2 修正 1。
+4. **扁平 png 分离仅模块执行**：原版 `pack()` 以无参调用，`[ "$1" != mtz ]` 恒真，MTZ 产物同样被分离，属原版错误，已修正（依据见 §6.2 修正 3）。分离发生在全部 res 来源（基础库/主题/自定义）并入之后，分离出的产物根 `miui_mod_icons/` 同时包含主题与自定义的扁平静态图标（§5.2 步骤 7）。
+5. **denylist 过滤先于自定义图标导入**：自定义动态图标不受禁用列表约束，已禁用的包名可经自定义目录重新进入产物。该顺序为既定设计而非错误（PerfectIconsPacker 同序实现并明言“禁用先于自定义生效，因此自定义可以重新提供被禁用的图标”，见 §5.2 怪癖说明）。
 6. `customize.sh` 与 `updater-script` 在 Magisk 安装时即被消费，不随已装模块保留；模块备份样本中的 `update-binary` 已被导出工具改写、`post-fs-data.sh` 被移动位置，**权威文本一律以 `module.sh` heredoc 为准**（§6.1 已全文收录）。
 7. 原版装配日志中无“请稍候”字样（对应 string 变量未定义）；`x 文件下载失败` / `x 文件下载损坏` 为小写 x。
 8. 遮罩模板在仓库 `addition/`、App 内置 assets、实际产物三处逐字节一致，可放心内置为常量（§6.3）。
-9. mtz 外壳中的 `com.miui.home` 为 4 字节桩文件（内容 `test`），按原样复制。
+9. mtz 外壳的 `com.miui.home` 为 4 字节文本桩（内容 `test`），非合法 zip；装配时清除该桩，高级附加同名文件（须为完整可读 zip）优先，缺失时写入 22 字节空 zip（裸 EOCD）。该组件必要性与选择依据见 §6.2 修正 2。
 10. 原版版本检查比对 `.ini` 中的 `theme_version` 时间戳 / 主图标库 `git_SHA`；新 App 改比对 GitHub commit SHA，数据同源。
 
 ---
@@ -257,18 +259,20 @@ App 私有数据备份中的 `miui/` 图标缓存（约 800MB，内含嵌有原�
 6. 自定义图标（开关开启），状态 “正在导入自定义图标…”：
    静态图标/*   → icons/res/drawable-xxhdpi/
    动态图标/*   → icons/layer_animating_icons/
-   高级附加/*   → 产物根 addons/（与 icons 同级，两种模式一致）
-7. 扁平 png 分离（模块与 MTZ 两种模式均执行）：
+   高级附加/*   → 产物根 addons/ 暂存（模块产物保留于此，安装时由 customize.sh 按文件名展平；
+                  MTZ 在步骤 8 后合并外壳时按文件名递归展平到产物根，子目录仅作分类，见 §6.2）
+7. 扁平 png 分离（仅模块执行）：
    icons/res/drawable-xxhdpi/ 顶层扁平 *.png（含主题与自定义静态图标）
    → 产物根 miui_mod_icons/（目录形分层图标留在 res；
-   分离在全部 res 来源并入之后执行）
+   分离在全部 res 来源并入之后执行；MTZ 不分离，扁平 png 留在 icons 内）
 8. icons/{res/, layer_animating_icons/, transform_config.xml} 打为 zip，命名 icons
 ```
 
-两条必须注意的原版怪癖（均已在 `module.sh` 逐行核实，实现不得“顺手修正”）：
+一条必须注意的原版怪癖（已在 `module.sh` 逐行核实，实现不得“顺手修正”）：
 
-- **步骤 7 对 MTZ 同样执行**：原版 `pack()` 在主流程中以无参形式调用（`module.sh` 第 384 行），函数内 `$1` 为空，`[ "$1" != mtz ]` 恒为真，分离无条件执行。MTZ 产物根因此同样含 `miui_mod_icons/`，`icons` 内不含扁平 png。
-- **denylist 盖不住自定义动态图标**：原版顺序为“过滤（第 205 行）→ 导入自定义（第 207 行）”，自定义动态图标在过滤**之后**并入 `layer_animating_icons/`，已禁用的包名若存在于自定义目录会被重新加入，“禁用全部”亦然。保留此顺序以维持产物与原版逐文件一致；在禁用动态图标页对此例外作明确提示（§10.5）。
+- **denylist 盖不住自定义动态图标**：原版顺序为“过滤（第 205 行）→ 导入自定义（第 207 行）”，自定义动态图标在过滤**之后**并入 `layer_animating_icons/`，已禁用的包名若存在于自定义目录会被重新加入，“禁用全部”亦然。该顺序经交叉确认为既定设计而非错误：PerfectIconsPacker 的合并顺序与之相同（合并默认 → 静态禁用 → 动态禁用 → 自定义静态 → 自定义动态 → 遮罩 → 附加），其文档明言“禁用先于自定义生效，因此自定义可以重新提供被禁用的图标”“禁用删除该 id 的全部静态形态，自定义只覆盖其中一层”（《主题格式》 https://github.com/YifePlayte/PerfectIconsPacker/blob/main/docs/THEME_FORMAT.md 、《自定义模型》 https://github.com/YifePlayte/PerfectIconsPacker/blob/main/docs/CUSTOMIZATION.md ）——禁用作用于默认携带内容、自定义在其后覆盖，两者是不同层次的操作。予以保留；在禁用动态图标页对此例外作明确提示（§10.5）。
+
+原版另一处怪癖（步骤 7 对 MTZ 同样执行）属原版错误，已修正、不再保留：原版 `pack()` 在主流程中以无参形式调用（`module.sh` 第 384 行），函数内 `$1` 为空，`[ "$1" != mtz ]` 恒为真，分离无条件执行；修正后 MTZ 产物不含 `miui_mod_icons/`，恰还原该判断的本意（修正依据见 §6.2 修正 3）。
 
 装配各步骤以状态文本逐段显示（§10.6），无“请稍候”字样：`正在导出{装配名}…` →（禁用/导入步骤，如适用）→ `正在打包图标资源…` →（MTZ：`正在合并 MTZ 外壳…`）→ `正在打包产物…` → `正在保存产物` → 结果文本。
 
@@ -332,29 +336,48 @@ themeid={主题ID}
 - 写 22 字节空 ZIP（EOCD：`50 4B 05 06` + 18 字节 `00`）到 `$MODPATH/$MEDIAPATH/theme/default/dynamicicons`
 - `set_perm_recursive $MODPATH 0 0 0755 0644`；`rm -rf /data/system/package_cache/*`；提示“√ 安装成功，请重启设备”
 
+注：HyperOS 4 的模块形态与原版不同——重制版 PerfectIconsPacker 将动态图标拆分为独立的 `dynamicicons` 归档、以 `theme_staging/` 暂存并整体 `mv` 安装、不设 `SKIPUNZIP`、要求 Android 13+（其《主题格式》与《架构》文档：https://github.com/YifePlayte/PerfectIconsPacker/blob/main/docs/THEME_FORMAT.md 、https://github.com/YifePlayte/PerfectIconsPacker/blob/main/docs/ARCHITECTURE.md ）。本 App 模块沿用原版结构（动态图标在 `icons` 内、`unzip` 逐条目安装、Android 10+），两者面向的系统代次与安装机制不同，不互为规格。
+
 ### 6.2 MTZ 主题包
 
 ```
 {装配名}完美图标补全-{MMddHHmm}.mtz   (= zip)
-├─ icons               ← §5.2 装配产物（res 不含扁平 png + layer_animating_icons + transform_config.xml）
-├─ miui_mod_icons/     ← 步骤7 分离的扁平静态图标（MTZ 同样执行分离，与模块一致）
-├─ addons/**           ← 自定义“高级附加”（可选，位于根目录、与 icons 同级）
+├─ icons               ← §5.2 装配产物（res 含扁平 png 平铺 + 分层目录 + layer_animating_icons + transform_config.xml）
+├─ <高级附加文件>       ← 自定义“高级附加”按文件名递归展平到根作为主题组件（可选，子目录仅作分类、不进入产物）
+├─ com.miui.home       ← 22 字节空 zip（裸 EOCD；高级附加提供的同名完整可读 zip 优先）
 ├─ description.xml     ← 取 repo/addition/mtz/description.xml，字符串“themename”全部替换为装配名
 ├─ preview/**          ← 原样（12 张预览图）
-├─ wallpaper/**        ← 原样（default_wallpaper.png）
-└─ com.miui.home       ← 原样（4 字节桩文件，内容“test”）
+└─ wallpaper/**        ← 原样（default_wallpaper.png）
 ```
 
-即：除 `module.prop`、`post-fs-data.sh`、`customize.sh`、`META-INF/` 四项模块专属内容外，MTZ 与模块 zip 的其余结构完全一致（icons + miui_mod_icons + addons + mtz 外壳四件套）。description.xml（仓库模板，`uiVersion=10`，title 为 `themename&MIUI完美图标补全`，含项目介绍与图标绘制者署名 @潮留美海かり @PedroZ @Yife Playte @Eirperuier @Mastiff Li）原样使用；服务端原件样本见 `docs/sample-outputs/mtz.tar.xz`。完成提示附警示：`需要设计师账号或主题破解才能导入并使用。`（与保存结果同屏多行显示）
+注：官方设计师格式的动态图标位于 `icons/fancy_icons/<包名>/`（`manifest.xml` 结构，见官方语法文档 https://zhuti.designer.xiaomi.com/docs/grammar/ ）；本计划的动态图标沿用系统默认主题的 `layer_animating_icons/<包名>/<层>/`（quiet/fancy 分层）机制，两者是 `icons` 模块内两套不同的动态图标体系。
+
+description.xml（仓库模板，`uiVersion=10`，title 为 `themename&MIUI完美图标补全`，含项目介绍与图标绘制者署名 @潮留美海かり @PedroZ @Yife Playte @Eirperuier @Mastiff Li）原样使用；服务端原件样本见 `docs/sample-outputs/mtz.tar.xz`（其中的 `com.miui.home` 仍为文本桩，装配时替换为空 zip）。完成提示附警示：`需要设计师账号或主题破解才能导入并使用。`（与保存结果同屏多行显示）
+
+**修正说明（原版 MTZ 打包逻辑存在格式错误，已修正）**：真实 MTZ 的根目录由 `description.xml`、`preview/`、`wallpaper/` 与一组无扩展名的组件 zip（`icons`、`com.miui.home`、`com.android.systemui`、`framework-miui-res` 等）构成——该形态为官方组件清单与全部参考实现的共同结论，导入器对未知目录/条目的行为无实证。修正依据分级：
+
+- **官方文档明示**：《主题入门教程》（https://zhuti.designer.xiaomi.com/docs/themePage/guide/ ）的“编辑组件-主题包模块对应表”与《图标变换与滤镜》（https://zhuti.designer.xiaomi.com/docs/blog/iconTransformationFilter.html ）的图标命名规则：主题包目录即根目录组件清单（无 `addons` 条目，国际版指南 https://in.zhuti.designer.intl.xiaomi.com/tutorial/guide/ 同）；静态图标置于 `icons/res/drawable-xxhdpi/`，以包名或 Activity 命名
+- **参考实现行为一致**：均把扁平 png 写入 icons 内——PerfectIconsPacker（https://github.com/YifePlayte/PerfectIconsPacker ，代码与测试）、IconPack-to-MTZ（https://github.com/Adiker/IconPack-to-MTZ ，无高级附加功能，作为 icons 结构与真机导入的独立证据：其文档报告独立 MTZ 已在 HyperOS 设备导入成功）、iconpack2mtz（https://github.com/Ra1nify/iconpack2mtz ）、IconEditor（https://github.com/Inefy-03/IconEditor ）、mtz-extractor（https://github.com/ryshaal/mtz-extractor ）；高级附加写根目录的直接证据仅 PerfectIconsPacker 的代码与测试，IconEditor（原样保留导入 MTZ 的全部根条目）与 mtz-extractor（逐顶层目录打包为根条目）以“根目录条目即组件”的行为间接支持。注意 PerfectIconsPacker 自身文档与代码在附加路径上相互矛盾（模块文档写按文件名平铺并报同名错、MTZ 文档写 `addons/` 保留子目录，代码两处均保留相对路径），本 App 不采信其嵌套附加行为、以原版模块安装行为为准（见修正 1）
+- **原版模块行为实测**：本地复核 `unzip -oj addons/*` 展平语义（通配符跨目录层级、按文件名落地）
+
+三处修正（①为推断性格式修正，②为占优的推断性选择，③有官方文档直接支持）：
+
+1. **高级附加**：原版置于根目录 `addons/`，官方组件清单无此条目、参考实现均不使用，推断其无法生效（模块侧 `customize.sh` 会把 `addons/` 下全部文件按文件名展平进 `theme/default/`，MTZ 导入路径无此搬运）——修正为按文件名递归展平到根，子目录仅作分类、不进入产物；与 PerfectIconsPacker 代码“保留子目录”不同（其嵌套路径同样不是已知组件形态）。展平后的文件名（大小写不敏感）命中保留名——`icons`、`description.xml`、`miui_mod_icons`、`preview`、`wallpaper`、`addons`、`module.prop`、`META-INF`、`system`、`dynamicicons`——或不同子目录出现同名文件时报错中止；`com.miui.home` 不在保留名内，同名附加按修正 2 优先替换。系统侧 `theme/default/` 与 MTZ 根目录是同一套组件模型（`icons` 以归档文件落地，`module-backup-filelist.txt` 实物可证）
+2. **com.miui.home**：外壳原件为 4 字节文本桩（“test”），非合法 zip——修正为清除桩后写入 22 字节空 zip（裸 EOCD，与原版 `customize.sh` 写入 `dynamicicons` 桩同款手法，实物备份佐证系统侧容忍空 zip 归档）。该组件的必要性属推断而非实证：PerfectIconsPacker 携带空 zip 并称其用于桌面主题识别，IconPack-to-MTZ 不携带亦可在其测试设备导入；选择空 zip 是因其在各场景下不劣于文本桩（合法、保留外壳结构、可被附加替换）。高级附加提供的同名文件优先，但须为完整可读 zip——装配时完整读取每个条目以触发本地头与 CRC 校验，非有效文件报错中止（避免把原版文本桩的问题原样带回）
+3. **扁平 png**：不再分离到根目录 `miui_mod_icons/`（§5.2 步骤 7）——官方文档明示静态图标在 `icons/res/drawable-xxhdpi/` 且全部参考实现一致（最强证据）；`miui_mod_icons/` 是模块安装到 `theme/` 下的系统路径、MTZ 内无已知读取方（推断）
+
+模块产物不受上述修正影响，仍与原版逐文件一致。
 
 ### 6.3 遮罩配置（两版；装配取仓库缓存文件，App 内置 assets 模板兜底）
 
 - **V1（MIUI 12–14）**：`SupportLayerIcon=true` + `ConfigIconMask`，全文见 `app/src/main/assets/transform_config1.xml`（与仓库 `addition/transform_config.xml` 及原版 assets 逐字节一致）
 - **V2（HyperOS）**：`SupportLayerIcon=true` + `UseDynamicIcon=true` + `ConfigIconMask`，全文见 `app/src/main/assets/transform_config2.xml`
+- **默认值**：按 `ro.miui.ui.version.code` 推断：≤ 14 → V1（关），> 14 → V2（开）。通过 `android.os.SystemProperties` 反射读取；失败时默认 V1（关），并在开关副标题提示用户自行确认
 
 ### 6.4 验收口径
 
-- 同配置下与原 App 产物逐文件 diff 一致（允许时间戳差异）；实物对照清单：`docs/sample-outputs/icons-zip-filelist.txt`（9440 条）与 `module-backup-filelist.txt`。注意：现存实物样本仅 Magisk 模块（爱玩机备份），**MTZ 产物无实物对照**，其结构规格由 `module.sh` 逐行推导（§5.2、§6.2 已注明两处关键怪癖），MTZ 验收以脚本推导复核 + 破解环境实际导入为准
+- **模块产物**：同配置下与原 App 产物逐文件 diff 一致（允许时间戳差异）；实物对照清单：`docs/sample-outputs/icons-zip-filelist.txt`（9440 条）与 `module-backup-filelist.txt`（爱玩机备份，现存唯一实物样本）
+- **MTZ 产物**：无实物对照，按 §6.2 修正后格式验收（原版 MTZ 逻辑存在格式错误，修正依据分级与参考链接见 §6.2 修正说明，行为基准参照 PerfectIconsPacker 的 `MtzBuilder` 及其测试 `ThemeBuildTest`），以单元测试复核 + 破解环境实际导入为准
 - mtz 可被破解环境主题商店导入；模块 zip 可被 Magisk v20.4+ / KernelSU 刷入
 
 ---
@@ -364,7 +387,7 @@ themeid={主题ID}
 | 配置 | 默认 | 原版对应 | 说明 |
 |---|---|---|---|
 | 主题 ID | `default` | `theme_files/theme_config`（`sel_theme=`） | |
-| 新版遮罩 | 按 `ro.miui.ui.version.code` 推断：≤14 → 关（V1），> 14 → 开（V2）；读取失败默认关 | `theme_files/new_transform_config` | §15.2 |
+| 新版遮罩 | 按 `ro.miui.ui.version.code` 推断：≤14 → 关（V1），> 14 → 开（V2）；读取失败默认关 | `theme_files/new_transform_config` | §6.3 |
 | 自定义图标开关 | 关 | `theme_files/addon_config`（`addon=`） | |
 | denylist | 空集 | `theme_files/denylist`（文件不存在 = 空；`all` = 全部；包名以空白分隔） | |
 | 输出目录 | 公共 Download | `zipoutdir_config` | SAF 选目录 |
@@ -482,7 +505,7 @@ M3 ListItem（leading：`history`），标题“更新日志及检查更新”�
 | 图标自定义 | `tune` | 值：`未启用`/`已启用` + chevron | → 图标自定义页（§10.4） |
 | 禁用动态图标 | `animation` | 值：`未启用`/`已选 N 个应用`/`已禁用全部` + chevron | → 禁用动态图标页（§10.5） |
 | 输出目录 | `folder` | 值：`当前目录：{路径}`（默认 `Download（默认）`；授权失效显示 `目录授权已失效，请重新选择`）+ chevron | SAF `OPEN_DOCUMENT_TREE` 选目录并持久化授权 |
-| 是否启用新版遮罩 | `layers` | `MaterialSwitch` | 切换即持久化；默认值见 §15.2 |
+| 是否启用新版遮罩 | `layers` | `MaterialSwitch` | 切换即持久化；默认值见 §6.3 |
 
 遮罩行副标题（固定文案，基于原版修订，仅补 pangu 空格）：
 > 如果你使用的是 HyperOS 的新桌面，请开启这个选项。如果是 MIUI 那就关闭。如果图标大小异常，可尝试切换。
@@ -501,6 +524,8 @@ M3 ListItem（leading：`history`），标题“更新日志及检查更新”�
 - MTZ：`确认上述配置无误后，将生成 mtz 主题包，需要设计师账号或主题破解才能应用。`
 - 模块：`确认上述配置无误后，将生成模块，可自行安装。`
 - 追加：`产物适用于 Android 10 及以上版本的 HyperOS / MIUI。首次下载约 100~130 MB，下载缓慢或失败时可尝试切换网络。`
+
+系统要求不做强制校验（模块模式的版本校验在 customize.sh 安装时进行）。
 
 ### 9.5 区块⑤：文档卡
 
@@ -564,7 +589,8 @@ TopAppBar（返回）
 [说明卡] 三类目录说明（简化文案，规则详见 §5.2 步骤6）：
    静态图标：支持 包名.png（扁平）或 包名目录（分层），会并入产物的静态图标
    动态图标：整个包名目录连同内部结构一起并入动态图标
-   高级附加：文件原样放入主题或模块根目录的 addons
+   高级附加：模块产物置于根目录的 addons，安装时按文件名展平；MTZ 产物按文件名递归展平到根目录作为主题组件，
+   子目录仅作分类；占用保留名、同名文件或 com.miui.home 附加非有效 zip 时报错中止
    自定义目录：{当前目录路径，未选择显示“未选择”}
 ▸ 导入静态图标文件（选择一个或多个 PNG 文件）
 ▸ 导入静态图标目录（适用于分层图标）
@@ -575,7 +601,9 @@ TopAppBar（返回）
 ```
 
 - 目录机制兼容原版：`/sdcard/Documents/MIUI完美图标自定义/` 下设 `静态图标`、`动态图标`、`高级附加` 三个子目录（+ `.nomedia`）；首次启用经 `OPEN_DOCUMENT_TREE` 一次性授权该目录，原版用户文件免迁移直接读取
-- **装配时对三类内容均整体递归复制、不做结构校验**（与原版 `cp -rf` 一致）——动态图标在仓库中的实际样本即含 `0/`、`1/`、`quiet/`、`config.xml` 等复杂递归结构，任何“必须含 0.png + 1.png”之类的校验都会拒绝现有有效样本；静态图标目录下扁平 png 与分层目录可并存，扁平 png 在装配步骤 7 被分离至 `miui_mod_icons/`
+- **装配时对三类内容均整体递归复制、不做结构校验**（与原版 `cp -rf` 一致，高级附加的展平及保留名/同名/com.miui.home zip 校验除外）——动态图标在仓库中的实际样本即含 `0/`、`1/`、`quiet/`、`config.xml` 等复杂递归结构，任何“必须含 0.png + 1.png”之类的校验都会拒绝现有有效样本；静态图标目录下扁平 png 与分层目录可并存，扁平 png 在装配步骤 7 被分离至 `miui_mod_icons/`（仅模块；MTZ 留在 icons 内）
+- 桌面对同一包名的解析优先级为动态分层 > 静态分层 > 单张（参考实现 PerfectIconsPacker《主题格式》 https://github.com/YifePlayte/PerfectIconsPacker/blob/main/docs/THEME_FORMAT.md 所述，与原版分层/单张两种形态并存的行为一致）：自定义扁平 png 与默认分层图标同名时分层生效、单张不显示但保留在产物中，删除分层后单张重新生效；不改模块行为，仅作说明
+- 图标命名遵循官方规则（《图标变换与滤镜》 https://zhuti.designer.xiaomi.com/docs/blog/iconTransformationFilter.html ）：单一桌面图标以包名命名（如 `com.android.camera.png`）；一个 APK 有多个桌面图标时以 Activity 类名命名；两个相同的 Activity 有不同包名时以“类名 @包名”命名；官方图标画布标准为 168x168（系统默认图标画布内实际 156x156）。应用标识的查找优先级（包名 < 类名 < 包名#类名）另见 PerfectIconsPacker《自定义模型》 https://github.com/YifePlayte/PerfectIconsPacker/blob/main/docs/CUSTOMIZATION.md
 - 应用内导入：SAF 多选 png 或目录（静态，扁平/分层均可）/ 选目录整体复制（动态，不校验内部结构）/ 任选文件（高级附加）
 - 下载图标存档：本地已缓存 → 从缓存 `addition/Icons_Archiving/` 打 zip 导出；未缓存 → 先从 GitHub 下载该目录；产物为自定义图标目录下的 `图标存档.zip`；完成提示：`图标存档已下载到 {显示标签}`
 - 查看已存档图标外链：`https://github.com/pzcn/Perfect-Icons-Completion-Project/tree/main/addition/Icons_Archiving`
@@ -681,6 +709,11 @@ TopAppBar（返回）
 | 8 | 安装模块 / 重启 / Xposed / Beta / 下载兼容模式 | 全部移除，产物到文件即止 | §1.2 |
 | 9 | 以 HEAD 探测对象存储作为网络门禁 | 不做连通性预检，直接请求资源端点 | 原门禁单点故障即致 App 整体失效（§3.3） |
 | 10 | 图标存档从服务器 zip 下载 | 从本地缓存导出或从 GitHub 下载，保存位置不变 | 数据同源 |
+| 11 | MTZ 高级附加留在产物根 `addons/` | 按文件名递归展平到根（保留名/同名报错，`com.miui.home` 同名可替换） | 原版位置不属 MTZ 组件形态（推断，§6.2 修正 1） |
+| 12 | MTZ `com.miui.home` 为 4 字节文本桩（`test`） | 22 字节空 zip，高级附加同名完整可读 zip 优先 | 文本桩非合法 zip（§6.2 修正 2） |
+| 13 | MTZ 产物同样分离扁平 png 至 `miui_mod_icons/` | 仅模块分离，MTZ 扁平 png 留在 icons 内 | 官方文档明示静态图标在 `icons/res/drawable-xxhdpi/`（§6.2 修正 3） |
+
+**原版行为保留清单**（与上表互补，下列行为原样保留）：确认对话框 · 任务面板状态实时刷新 + 后台运行 · 配置值（trailing summary）实时刷新 · 下载进度（大小/百分比/后台/续传）· 完成后路径提示 + 跳转 · 清理缓存（含大小统计）· 已适配数量统计 · denylist“按需选择，请勿全选”警示 · mtz 设计师账号或主题破解警示 · 图标存档下载 · 深色模式 · 公告拉取与缓存回退策略
 
 ---
 
@@ -699,23 +732,3 @@ TopAppBar（返回）
 - **清理缓存**：`缓存清理完成` / `当前缓存大小`
 - **确认（基于原版修订）**：`确认上述配置无误后，将生成 mtz 主题包，需要设计师账号或主题破解才能应用。` / `确认上述配置无误后，将生成模块，可自行安装。`（本 App 为本地生成，原版“下载”改“将生成”）
 - **长文（基于原版修订）**：禁用页警示（§10.5 全文：统一“动态图标”、补 pangu 空格）、遮罩开关说明（§9.3 全文：仅补 pangu 空格）、生成说明（§9.4：仅补 pangu 空格）、清理缓存确认（沿用原版）
-
----
-
-## 15. 行为细节备注
-
-### 15.1 权限最小化
-
-Manifest 仅声明 `INTERNET`、`QUERY_ALL_PACKAGES`（应用选择页需列出全部已安装应用）与前台服务/通知相关权限；输出公共 Download 走 MediaStore（免存储权限）；输出目录与自定义图标目录走 SAF 一次性授权；无任何 root 相关声明。
-
-### 15.2 新版遮罩默认值
-
-按 `ro.miui.ui.version.code` 推断：≤ 14 → V1（关），> 14 → V2（开）。通过 `android.os.SystemProperties` 反射读取；失败时默认 V1（关），并在开关副标题提示用户自行确认。
-
-### 15.3 系统要求提示
-
-说明文字与生成确认对话框中提示：产物适用于 Android 10+ 的 HyperOS / MIUI；不做强制校验（模块模式的版本校验在 customize.sh 安装时进行）。
-
-### 15.4 原版行为保留清单
-
-确认对话框 · 任务面板状态实时刷新 + 后台运行 · 配置值（trailing summary）实时刷新 · 下载进度（大小/百分比/后台/续传）· 完成后路径提示 + 跳转 · 清理缓存（含大小统计）· 已适配数量统计 · denylist“按需选择，请勿全选”警示 · mtz 设计师账号或主题破解警示 · 图标存档下载 · 深色模式 · 公告拉取与缓存回退策略。
