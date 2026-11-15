@@ -85,6 +85,11 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
     testImplementation(libs.junit)
+    // 纯 JVM 单元测试环境没有 Android 运行时，android.jar 里的 org.json 是只抛 "not mocked" 异常的空壳，用 JSONObject 构造夹具的测试类会直接崩溃，因此需要真实现
+    // 运行时不受影响：APP 使用 Android 自带的 org.json，此依赖仅进入测试的 classpath
+    // 可用 ./gradlew app:dependencies --configuration releaseRuntimeClasspath 验证产物依赖树不含 org.json
+    // 纯 Java 库、零传递依赖，不触碰行为红线
+    testImplementation(libs.json)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
 }

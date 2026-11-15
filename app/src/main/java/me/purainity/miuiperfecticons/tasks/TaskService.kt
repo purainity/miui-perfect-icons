@@ -51,6 +51,7 @@ class TaskService : Service() {
         }
         val kind = intent?.getStringExtra(EXTRA_KIND) ?: run { stopSelf(); return START_NOT_STICKY }
         if (kind !in setOf(MTZ, MODULE, SYNC, ARCHIVE)) { stopSelf(); return START_NOT_STICKY }
+        val settings = AppSettings(this)
         if (!TaskRuntime.begin(kind, getString(R.string.task_stage_preparing))) {
             if (!TaskRuntime.current().running) {
                 startForeground(NOTIFICATION_ID, notification(getString(R.string.task_stage_preparing), 0, 0))
@@ -78,8 +79,8 @@ class TaskService : Service() {
                 TaskRuntime.status(failure)
                 if (error is RateLimitException && kind in setOf(MTZ, MODULE)) {
                     try {
-                        canUseCache = GitHubRepository(filesDir, TaskRuntime::ensureActive)
-                            .hasCompleteSnapshot(AppSettings(this).theme.id)
+                        canUseCache = GitHubRepository(filesDir, TaskRuntime::ensureActive, endpoint = settings.githubEndpoint())
+                            .hasCompleteSnapshot(settings.theme.id)
                     } catch (_: InterruptedException) {
                         cancelled = true
                         failure = null
@@ -132,7 +133,12 @@ class TaskService : Service() {
         }
         var lastProgressUpdate = 0L
         val progressLock = Any()
-        val repo = GitHubRepository(filesDir, TaskRuntime::ensureActive, TaskRuntime::status) { done, total ->
+        val repo = GitHubRepository(
+            filesDir,
+            TaskRuntime::ensureActive,
+            TaskRuntime::status,
+            endpoint = settings.githubEndpoint(),
+            progress = { done, total ->
             synchronized(progressLock) {
                 val now = android.os.SystemClock.elapsedRealtime()
                 if (done != total && done != 0L && now - lastProgressUpdate < 250) return@synchronized
@@ -140,7 +146,8 @@ class TaskService : Service() {
             TaskRuntime.update { it.copy(stage = getString(R.string.task_stage_downloading), completedBytes = done, totalBytes = total) }
             try { notifications.notify(NOTIFICATION_ID, notification(getString(R.string.task_notify_downloading), done, total)) } catch (_: SecurityException) { }
             }
-        }
+        },
+        )
         val archiveEntries = if (kind == ARCHIVE) {
             val cached = repo.cachedArchiveEntries()
             if (cached != null) {
@@ -197,12 +204,12 @@ class TaskService : Service() {
                 try {
                     val format = if (kind == MTZ) PackageFormat.MTZ else PackageFormat.MODULE
                     val options = AssemblyOptions(theme, newMask, disableAll, disabledPackages, custom, format, date)
-                    // 遮罩模板优先取仓库缓存文件，仓库中的 V1 文件名与 assets 模板不同；缓存缺失时回退内置模板
+                    // 遮罩模板取仓库缓存文件（随资源同步下载），仓库中的 V1 文件名与模板名不同
                     val maskLoader: (String) -> ByteArray = { name ->
                         val repoName = if (name == "transform_config1.xml") "transform_config.xml" else name
                         val repoFile = File(repo.files, "addition/$repoName")
-                        if (repoFile.isFile) repoFile.readBytes()
-                        else assets.open(name).use { input -> input.readBytes() }
+                        if (!repoFile.isFile) throw IOException(getString(R.string.task_error_mask_missing))
+                        repoFile.readBytes()
                     }
                     PackageAssembler(maskLoader, TaskRuntime::ensureActive, TaskRuntime::status)
                         .assemble(repo.files, work, result, options)

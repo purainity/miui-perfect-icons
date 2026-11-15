@@ -49,28 +49,28 @@ class PackageAssemblerTest {
         file.writeText(content)
     }
 
-    private fun File.putBytes(path: String, bytes: ByteArray) {
-        val file = resolve(path)
+    private fun File.putHomeBytes(bytes: ByteArray) {
+        val file = resolve("高级附加/com.miui.home")
         file.parentFile!!.mkdirs()
         file.writeBytes(bytes)
     }
 
-    private fun zipBytes(entryName: String, content: String): ByteArray {
+    private fun homeZipBytes(): ByteArray {
         val output = ByteArrayOutputStream()
         ZipOutputStream(output).use { zip ->
-            zip.putNextEntry(ZipEntry(entryName))
-            zip.write(content.toByteArray(Charsets.UTF_8))
+            zip.putNextEntry(ZipEntry("res/drawable-xhdpi/icon_notification_bg.png"))
+            zip.write("my-home".toByteArray(Charsets.UTF_8))
             zip.closeEntry()
         }
         return output.toByteArray()
     }
 
     /** STORED 条目：数据原样存储，便于构造“数据损坏但中央目录与本地头完好”的样本 */
-    private fun storedZipBytes(entryName: String, content: String): ByteArray {
-        val data = content.toByteArray(Charsets.UTF_8)
+    private fun storedZipBytes(): ByteArray {
+        val data = "content".toByteArray(Charsets.UTF_8)
         val output = ByteArrayOutputStream()
         ZipOutputStream(output).use { zip ->
-            val entry = ZipEntry(entryName).apply {
+            val entry = ZipEntry("res/x").apply {
                 method = ZipEntry.STORED
                 size = data.size.toLong()
                 compressedSize = data.size.toLong()
@@ -155,7 +155,7 @@ class PackageAssemblerTest {
     @Test fun mtzAddonReplacesComMiuiHome() {
         val repo = fixture()
         val custom = temporary.newFolder("custom").apply {
-            putBytes("高级附加/com.miui.home", zipBytes("res/drawable-xhdpi/icon_notification_bg.png", "my-home"))
+            putHomeBytes(homeZipBytes())
         }
         val output = temporary.root.resolve("theme.mtz")
         assembler().assemble(repo, temporary.root.resolve("work"), output, options(PackageFormat.MTZ, custom))
@@ -184,10 +184,10 @@ class PackageAssemblerTest {
     @Test fun mtzAddonCorruptComMiuiHomeAbortsAssembly() {
         val repo = fixture()
         // 破坏本地文件头签名、保留中央目录：仅构造 ZipFile 时可通过，完整读取条目时才失败
-        val corrupt = zipBytes("res/drawable-xhdpi/icon_notification_bg.png", "my-home")
+        val corrupt = homeZipBytes()
         corrupt[0] = 'X'.code.toByte()
         val custom = temporary.newFolder("custom").apply {
-            putBytes("高级附加/com.miui.home", corrupt)
+            putHomeBytes(corrupt)
         }
         val output = temporary.root.resolve("theme.mtz")
         try {
@@ -203,10 +203,10 @@ class PackageAssemblerTest {
     @Test fun mtzAddonCrcCorruptComMiuiHomeAbortsAssembly() {
         val repo = fixture()
         // STORED 条目数据损坏、中央目录与本地头完好：读取本身不报错，须由 CRC 核对拦截
-        val corrupt = storedZipBytes("res/x", "content")
+        val corrupt = storedZipBytes()
         corrupt[35] = (corrupt[35] + 1).toByte()
         val custom = temporary.newFolder("custom").apply {
-            putBytes("高级附加/com.miui.home", corrupt)
+            putHomeBytes(corrupt)
         }
         val output = temporary.root.resolve("theme.mtz")
         try {

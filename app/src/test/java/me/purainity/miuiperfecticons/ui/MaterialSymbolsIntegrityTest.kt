@@ -32,6 +32,8 @@ class MaterialSymbolsIntegrityTest {
             "ic_folder" to "527c6a7dd741753f91cd8f33894aa2cfac375138c852b1ebfc2b43195ebaa313",
             "ic_history" to "810cd1d657367d5f33c56bde96d6b3cb0e714528b8d60fb548a96cd4a63d257e",
             "ic_layers" to "862fbc5a61cd285db27fc455aa7578a669a71c8b0bbf50df1220d12a097677e5",
+            "ic_language" to "85b63f92da0edae5dfacb17b2ddc67a92c939ba4c872ee189d97c4efc9c00c4b",
+            "ic_key" to "40dff17f851df4eedadcdaf879912e1161b0599d3367b42499e4845018260307",
             "ic_link" to "c1aad36fbc2f5857731304472eb30c26b81b385e05852be9d3f6575848b1f35e",
             "ic_palette" to "77da392d239862f1c1a4f736d698debcffe9477eacb49947b41210360af23b92",
             "ic_search" to "e99d075e9867ec5347fc850eb629a6bbef1819cf393c39eaa06b43251f96ecd3",

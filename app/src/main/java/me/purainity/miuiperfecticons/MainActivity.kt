@@ -42,6 +42,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var settings: AppSettings
     private lateinit var themeRow: ItemNavigationBinding
     private lateinit var outputRow: ItemNavigationBinding
+    private lateinit var networkRow: ItemNavigationBinding
     private lateinit var updateRow: ItemNavigationBinding
     private lateinit var customRow: ItemNavigationBinding
     private lateinit var dynamicRow: ItemNavigationBinding
@@ -108,6 +109,9 @@ class MainActivity : AppCompatActivity() {
         outputRow = addRow(binding.configurationRows, R.drawable.ic_folder, R.string.output_directory) {
             chooseOutputDirectory()
         }
+        networkRow = addRow(binding.configurationRows, R.drawable.ic_language, R.string.network_title) {
+            openFeature(FeatureActivity.NETWORK)
+        }
         binding.maskSwitch.isChecked = settings.useNewMask
         binding.maskSetting.exposeSelectionState(binding.maskSwitch)
         binding.maskSetting.setOnClickListener { binding.maskSwitch.isChecked = !binding.maskSwitch.isChecked }
@@ -138,6 +142,13 @@ class MainActivity : AppCompatActivity() {
             else -> getString(R.string.dynamic_selected_apps, settings.disabledPackages.size)
         }
         dynamicRow.subtitle.visibility = View.VISIBLE
+        networkRow.subtitle.text = when {
+            settings.mirrorEnabled && settings.githubToken != null -> getString(R.string.network_summary_both)
+            settings.mirrorEnabled -> getString(R.string.network_summary_mirror)
+            settings.githubToken != null -> getString(R.string.network_summary_token)
+            else -> getString(R.string.network_summary_none)
+        }
+        networkRow.subtitle.visibility = View.VISIBLE
         val content = getSharedPreferences("content", MODE_PRIVATE)
         val latest = content.getString("updates_latest_time", null)?.let { OriginalChangelog.latestDate(it) }
         updateRow.subtitle.text = if (latest == null) getString(R.string.update_check_hint) else

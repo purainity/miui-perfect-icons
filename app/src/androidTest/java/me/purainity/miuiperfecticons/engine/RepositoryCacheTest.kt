@@ -34,17 +34,20 @@ class RepositoryCacheTest {
             val file = File(directory, "repo/${paths.first()}")
             val snapshot = File(directory, "snapshot-default.json")
             File(directory, "index.json").writeText(JSONObject().put("paths", index).toString())
-            snapshot.writeText(JSONObject().put("files", entries).toString())
+            snapshot.writeText(JSONObject().put("version", 2).put("files", entries).toString())
 
             val repository = GitHubRepository(directory)
+            snapshot.writeText(JSONObject().put("files", entries).toString())
+            assertFalse(repository.hasCompleteSnapshot("default"))
+            snapshot.writeText(JSONObject().put("version", 2).put("files", entries).toString())
             val invalidThemeRepository = GitHubRepository(directory, ensureActive = { throw AssertionError("非法主题不应进入缓存校验") })
             listOf("", "../default", "default/other", "default\\other").forEach { themeId ->
                 assertFalse(invalidThemeRepository.hasCompleteSnapshot(themeId))
             }
             assertTrue(repository.hasCompleteSnapshot("default"))
-            snapshot.writeText(JSONObject().put("files", JSONArray().put(entries.getJSONObject(0))).toString())
+            snapshot.writeText(JSONObject().put("version", 2).put("files", JSONArray().put(entries.getJSONObject(0))).toString())
             assertFalse(repository.hasCompleteSnapshot("default"))
-            snapshot.writeText(JSONObject().put("files", entries).toString())
+            snapshot.writeText(JSONObject().put("version", 2).put("files", entries).toString())
             val extra = File(file.parentFile, "download.tmp").apply { writeText("残留") }
             assertFalse(repository.hasCompleteSnapshot("default"))
             assertTrue(extra.delete())
@@ -74,16 +77,16 @@ class RepositoryCacheTest {
             val entry = JSONObject().put("path", path).put("sha", sha).put("size", 6)
             val snapshot = File(directory, "archive-snapshot.json")
             File(directory, "index.json").writeText(JSONObject().put("paths", JSONObject().put(path, sha)).toString())
-            snapshot.writeText(JSONObject().put("files", JSONArray().put(entry)).toString())
+            snapshot.writeText(JSONObject().put("version", 2).put("files", JSONArray().put(entry)).toString())
             val repository = GitHubRepository(directory)
             assertTrue(repository.cachedArchiveEntries()?.map { it.path } == listOf(path))
 
             file.writeText("world\n")
             assertTrue(repository.cachedArchiveEntries() == null)
             file.writeText("hello\n")
-            snapshot.writeText(JSONObject().put("files", JSONArray().put(entry).put(entry)).toString())
+            snapshot.writeText(JSONObject().put("version", 2).put("files", JSONArray().put(entry).put(entry)).toString())
             assertTrue(repository.cachedArchiveEntries() == null)
-            snapshot.writeText(JSONObject().put("files", JSONArray().put(
+            snapshot.writeText(JSONObject().put("version", 2).put("files", JSONArray().put(
                 JSONObject().put("path", "icons/outside.png").put("sha", sha).put("size", 6),
             )).toString())
             assertTrue(repository.cachedArchiveEntries() == null)

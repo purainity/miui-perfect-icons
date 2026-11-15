@@ -459,6 +459,18 @@ class FeaturePagesTest {
     }
 
     @Test
+    fun firstHeadingAtTopKeepsCompactSpacing() {
+        ActivityScenario.launch<FeatureActivity>(feature(FeatureActivity.NETWORK)).use { scenario ->
+            scenario.onActivity { activity ->
+                val content = activity.findViewById<ViewGroup>(R.id.content)
+                val first = content.getChildAt(0) as TextView
+                assertEquals(activity.getString(R.string.network_group_token), first.text.toString())
+                assertEquals((4 * activity.resources.displayMetrics.density).toInt(), first.paddingTop)
+            }
+        }
+    }
+
+    @Test
     fun aboutShowsProjectLicensesAtBottomWithExternalLinks() {
         ActivityScenario.launch<FeatureActivity>(feature(FeatureActivity.ABOUT)).use { scenario ->
             scenario.onActivity { activity ->
@@ -474,13 +486,16 @@ class FeaturePagesTest {
                 assertFalse(texts(content).contains("查看原项目"))
                 assertFalse(texts(content).contains("查看图标资源仓库"))
                 val projectItems = content.getChildAt(1).findViewById<ViewGroup>(R.id.items)
-                assertEquals(2, projectItems.childCount)
+                assertEquals(3, projectItems.childCount)
                 assertTrue(texts(projectItems).contains("本项目 GitHub"))
                 assertTrue(texts(projectItems).contains("作者：轻雨 Purainity"))
                 assertTrue(texts(projectItems).contains("https://github.com/purainity/miui-perfect-icons"))
                 assertTrue(texts(projectItems).contains("https://github.com/purainity"))
                 assertTrue(texts(content).indexOf("本项目 GitHub") < texts(content).indexOf("原项目致谢"))
+                val thanks = textViews(content).first { it.text.toString() == "原项目致谢" }
                 val heading = textViews(content).first { it.text.toString() == "开源许可" }
+                assertEquals((20 * activity.resources.displayMetrics.density).toInt(), thanks.paddingTop)
+                assertEquals(heading.paddingTop, thanks.paddingTop)
                 val headingIndex = (0 until content.childCount).first { content.getChildAt(it) == heading }
                 assertEquals(content.childCount - 2, headingIndex)
                 val card = content.getChildAt(headingIndex + 1)
@@ -488,9 +503,10 @@ class FeaturePagesTest {
                 assertEquals(OpenSourceProjects.all.size, items.childCount)
                 OpenSourceProjects.all.forEachIndexed { index, project ->
                     val row = items.getChildAt(index)
-                    assertEquals("${project.name} - ${project.developer}", row.findViewById<TextView>(R.id.title).text.toString())
+                    assertEquals(project.name, row.findViewById<TextView>(R.id.title).text.toString())
                     assertEquals(project.url, row.findViewById<TextView>(R.id.projectUrl).text.toString())
-                    assertEquals(project.license, row.findViewById<TextView>(R.id.license).text.toString())
+                    assertEquals(activity.getString(R.string.licenses_project_meta, project.developer, project.license),
+                        row.findViewById<TextView>(R.id.projectMeta).text.toString())
                     val url = row.findViewById<TextView>(R.id.projectUrl)
                     assertTrue(url.maxLines > 1)
                     assertEquals(null, url.ellipsize)
@@ -524,7 +540,7 @@ class FeaturePagesTest {
                 val row = activity.layoutInflater.inflate(R.layout.item_open_source_project, null)
                 val title = row.findViewById<TextView>(R.id.title)
                 val url = row.findViewById<TextView>(R.id.projectUrl)
-                title.text = "AndroidX Very Long Project Name - Developer With A Long Name"
+                title.text = "AndroidX Very Long Project Name With Many Components"
                 url.text = "https://github.com/Remix-Design/RemixIcon/tree/v4.6.0"
                 measure(row)
                 assertTrue(title.layout.lineCount > 1)

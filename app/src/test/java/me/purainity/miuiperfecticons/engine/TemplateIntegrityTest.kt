@@ -1,19 +1,10 @@
 package me.purainity.miuiperfecticons.engine
 
-import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.io.File
 
 class TemplateIntegrityTest {
-    @Test fun embeddedMasksMatchOriginalTemplates() {
-        val original = File("../docs/original-app-scripts/local-scripts/misc")
-        val assets = File("src/main/assets")
-        listOf("transform_config1.xml", "transform_config2.xml").forEach { name ->
-            assertArrayEquals(File(original, name).readBytes(), File(assets, name).readBytes())
-        }
-    }
-
     @Test fun embeddedInstallScriptsMatchOriginalHeredocs() {
         val original = File("../docs/original-app-scripts/local-scripts/misc/module.sh").readText()
         val assets = File("src/main/assets")

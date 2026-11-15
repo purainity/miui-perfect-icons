@@ -21,8 +21,11 @@ class RepositoryIntegrationTest {
         val source = System.getenv("PERFECT_ICONS_SOURCE")?.let(::File)
         assumeTrue(source != null && File(source, "icons").isDirectory && File(source, "themes/explore").isDirectory)
         val repo = source!!
-        val templates = File("src/main/assets")
-        assertTrue(templates.isDirectory)
+        // 遮罩模板以 docs 内的原版拷贝为源（不再内置 assets，随资源同步取仓库缓存）；安装脚本仍以 assets 为源
+        val masks = File("../docs/original-app-scripts/local-scripts/misc")
+        val scripts = File("src/main/assets")
+        assertTrue(masks.isDirectory)
+        assertTrue(scripts.isDirectory)
         val layered = mutableMapOf<String, File>()
         val flat = mutableMapOf<String, File>()
         fun overlay(dir: File, prefix: String) {
@@ -40,10 +43,10 @@ class RepositoryIntegrationTest {
         overlay(File(repo, "themes/explore/icons"), "res/drawable-xxhdpi/")
         overlay(File(repo, "themes/explore/layer_animating_icons"), "layer_animating_icons/")
         overlay(File(repo, "themes/common/layer_animating_icons"), "layer_animating_icons/")
-        layered["transform_config.xml"] = File(templates, "transform_config1.xml")
+        layered["transform_config.xml"] = File(masks, "transform_config1.xml")
         assertTrue(layered.size > 1000)
         assertTrue(flat.isNotEmpty())
-        val assembler = PackageAssembler(template = { File(templates, it).readBytes() })
+        val assembler = PackageAssembler(template = { File(masks, it).readBytes() })
         for (format in PackageFormat.entries) {
             val output = File(temporary.root, "$format.zip")
             val options = AssemblyOptions(
@@ -79,7 +82,7 @@ class RepositoryIntegrationTest {
                         assertTrue("缺少扁平图标：$name", entry != null)
                         assertArrayEquals(file.readBytes(), outer.getInputStream(entry).readBytes())
                     }
-                    assertArrayEquals(File(templates, "customize.sh").readBytes(), outer.getInputStream(outer.getEntry("customize.sh")).readBytes())
+                    assertArrayEquals(File(scripts, "customize.sh").readBytes(), outer.getInputStream(outer.getEntry("customize.sh")).readBytes())
                     assertEquals("#MAGISK\n", outer.getInputStream(outer.getEntry("META-INF/com/google/android/updater-script")).reader().readText())
                 } else {
                     assertTrue(outer.entries().toList().none { it.name.startsWith("miui_mod_icons") })

@@ -31,13 +31,18 @@ import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import me.purainity.miuiperfecticons.config.AppSettings
+import me.purainity.miuiperfecticons.config.MirrorPreset
+import me.purainity.miuiperfecticons.config.MirrorPresets
 import me.purainity.miuiperfecticons.databinding.ActivityFeatureBinding
+import me.purainity.miuiperfecticons.databinding.DialogTextInputBinding
+import me.purainity.miuiperfecticons.databinding.ItemMirrorOptionBinding
 import me.purainity.miuiperfecticons.databinding.ItemNavigationBinding
 import me.purainity.miuiperfecticons.databinding.ItemOpenSourceProjectBinding
 import me.purainity.miuiperfecticons.databinding.ItemSwitchSettingBinding
 import me.purainity.miuiperfecticons.databinding.ViewFeatureGroupBinding
 import me.purainity.miuiperfecticons.databinding.ViewAboutHeaderBinding
 import me.purainity.miuiperfecticons.engine.DocumentStorage
+import me.purainity.miuiperfecticons.engine.GitHubEndpoint
 import me.purainity.miuiperfecticons.engine.GitHubRepository
 import me.purainity.miuiperfecticons.engine.OriginalChangelog
 import me.purainity.miuiperfecticons.engine.OriginalChangelogRepository
@@ -50,9 +55,13 @@ import me.purainity.miuiperfecticons.ui.CustomDirectoryLocation
 import me.purainity.miuiperfecticons.ui.OpenSourceProjects
 import me.purainity.miuiperfecticons.ui.applySystemBarInsets
 import me.purainity.miuiperfecticons.ui.exposeSelectionState
+import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
 import java.text.Collator
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.Executors
 
 /** 按功能构建独立的二级页面，避免将耗时的仓库和文件操作放在主线程 */
@@ -60,7 +69,11 @@ class FeatureActivity : AppCompatActivity() {
     private lateinit var binding: ActivityFeatureBinding
     private lateinit var settings: AppSettings
     private val io = Executors.newSingleThreadExecutor()
-    private fun repository() = GitHubRepository(filesDir)
+    private val tokenChecks = Executors.newSingleThreadExecutor()
+    // 镜像候选行与其当前绑定的预设，供点选切换与测速回显复用
+    private val mirrorOptions = mutableListOf<Pair<MirrorPreset, ItemMirrorOptionBinding>>()
+    private var speedTesting = false
+    private fun repository() = GitHubRepository(filesDir, endpoint = settings.githubEndpoint())
     private var pendingTask: String? = null
     private var hasResumed = false
     private var selectedApps = mutableSetOf<String>()
@@ -127,6 +140,7 @@ class FeatureActivity : AppCompatActivity() {
             DYNAMIC -> showDynamic()
             APPS -> showAppSelection()
             UPDATES -> showUpdates()
+            NETWORK -> showNetwork()
             ABOUT -> showAbout()
             else -> finish()
         }
@@ -151,6 +165,7 @@ class FeatureActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         io.shutdownNow()
+        tokenChecks.shutdownNow()
         super.onDestroy()
     }
 
@@ -163,11 +178,12 @@ class FeatureActivity : AppCompatActivity() {
 
     /** 使用同一套分组标题，保持各功能页信息层级一致 */
     private fun heading(title: String, configureHeading: (TextView) -> Unit = {}) {
+        val topPadding = if (binding.content.isEmpty()) 4 else 20
         TextView(this).apply {
             setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_TitleSmall)
             setTextColor(MaterialColors.getColor(this, androidx.appcompat.R.attr.colorPrimary))
             text = title
-            setPadding(dp(4), dp(20), dp(4), dp(8))
+            setPadding(dp(4), dp(topPadding), dp(4), dp(8))
             ViewCompat.setAccessibilityHeading(this, true)
             configureHeading(this)
             binding.content.addView(this)
@@ -224,6 +240,10 @@ class FeatureActivity : AppCompatActivity() {
         val control = group(getString(R.string.custom_group_title))
         val switchRow = ItemSwitchSettingBinding.inflate(layoutInflater, control, true)
         val switch = switchRow.toggle
+        switchRow.icon.setImageResource(R.drawable.ic_check_box)
+        switchRow.title.text = getString(R.string.custom_icons_toggle)
+        switchRow.subtitle.text = getString(R.string.custom_icons_summary)
+        switch.contentDescription = getString(R.string.custom_icons_toggle)
         switchRow.root.contentDescription = getString(
             R.string.selection_with_description, getString(R.string.custom_icons_toggle), getString(R.string.custom_icons_summary),
         )
@@ -344,6 +364,305 @@ class FeatureActivity : AppCompatActivity() {
         val flags = (if (grant.isReadPermission) Intent.FLAG_GRANT_READ_URI_PERMISSION else 0) or
             (if (grant.isWritePermission) Intent.FLAG_GRANT_WRITE_URI_PERMISSION else 0)
         try { contentResolver.releasePersistableUriPermission(uri, flags) } catch (_: SecurityException) { }
+    }
+
+    private fun showNetwork() {
+        clear(getString(R.string.network_title))
+        val token = group(getString(R.string.network_group_token))
+        paragraph(token, getString(R.string.network_token_note))
+        val tokenState = if (settings.githubToken == null) getString(R.string.network_token_unset)
+        else getString(R.string.network_token_set)
+        action(token, R.drawable.ic_key, getString(R.string.network_token_row), tokenState) { editToken() }
+
+        val mirror = group(getString(R.string.network_group_mirror))
+        paragraph(mirror, getString(R.string.network_mirror_note))
+        val switchRow = ItemSwitchSettingBinding.inflate(layoutInflater, mirror, true)
+        switchRow.icon.setImageResource(R.drawable.ic_language)
+        switchRow.title.text = getString(R.string.network_mirror_switch)
+        switchRow.subtitle.text = getString(R.string.network_mirror_switch_summary)
+        switchRow.root.contentDescription = getString(
+            R.string.selection_with_description, getString(R.string.network_mirror_switch), getString(R.string.network_mirror_switch_summary),
+        )
+        switchRow.root.exposeSelectionState(switchRow.toggle)
+        switchRow.root.setOnClickListener { switchRow.toggle.isChecked = !switchRow.toggle.isChecked }
+        switchRow.toggle.contentDescription = getString(R.string.network_mirror_switch)
+        switchRow.toggle.isChecked = settings.mirrorEnabled
+        // 只重建开关行之后的内容，开关行本身保持不动，避免打断切换动画
+        switchRow.toggle.setOnCheckedChangeListener { _, checked ->
+            settings.mirrorEnabled = checked
+            rebuildMirrorDetails(mirror, switchRow.root)
+        }
+        rebuildMirrorDetails(mirror, switchRow.root)
+    }
+
+    /** 镜像开关行之后的候选列表与自定义前缀行；开关切换与页面重建共用 */
+    private fun rebuildMirrorDetails(container: LinearLayout, switchRow: View) {
+        val keep = container.indexOfChild(switchRow) + 1
+        if (container.childCount > keep) container.removeViews(keep, container.childCount - keep)
+        mirrorOptions.clear()
+        speedTesting = false
+        if (!settings.mirrorEnabled) return
+        val speedButton = filledButton(container, getString(R.string.network_mirror_speed)) { }
+        speedButton.setOnClickListener { testMirrorSpeeds(speedButton) }
+        val selected = MirrorPresets.find(settings.mirrorPreset)
+        MirrorPresets.all.forEach { preset ->
+            val option = ItemMirrorOptionBinding.inflate(layoutInflater, container, true)
+            option.title.text = preset.label
+            option.subtitle.text = preset.description
+            option.radio.isChecked = preset.id == selected.id
+            option.speed.visibility = View.GONE
+            option.root.contentDescription = getString(R.string.selection_with_description, preset.label, preset.description)
+            option.root.setOnClickListener { selectMirror(preset, container) }
+            // 长按仅测当前行
+            option.root.setOnLongClickListener {
+                speedSingleMirror(preset, option)
+                true
+            }
+            mirrorOptions.add(preset to option)
+        }
+        appendCustomPrefixRows(container)
+    }
+
+    /** 点选候选即保存：仅更新单选状态与尾部自定义前缀行，列表本身不重建 */
+    private fun selectMirror(preset: MirrorPreset, container: LinearLayout) {
+        if (settings.mirrorPreset == preset.id) return
+        settings.mirrorPreset = preset.id
+        mirrorOptions.forEach { (candidate, option) -> option.radio.isChecked = candidate.id == preset.id }
+        val lastOption = mirrorOptions.last().second.root
+        val keep = container.indexOfChild(lastOption) + 1
+        if (container.childCount > keep) container.removeViews(keep, container.childCount - keep)
+        appendCustomPrefixRows(container)
+    }
+
+    private fun appendCustomPrefixRows(container: LinearLayout) {
+        if (MirrorPresets.find(settings.mirrorPreset).id != MirrorPresets.custom.id) return
+        action(container, R.drawable.ic_link, getString(R.string.network_mirror_api_row),
+            settings.mirrorCustomApi ?: getString(R.string.network_mirror_official_api)) { editMirrorPrefix(api = true) }
+        action(container, R.drawable.ic_link, getString(R.string.network_mirror_raw_row),
+            settings.mirrorCustomRaw ?: getString(R.string.network_mirror_official_raw)) { editMirrorPrefix(api = false) }
+    }
+
+    /** 单条测速：长按候选行触发，与全量测速互斥，结果只回显到当前行 */
+    private fun speedSingleMirror(preset: MirrorPreset, option: ItemMirrorOptionBinding) {
+        if (speedTesting) {
+            message(getString(R.string.network_mirror_speed_running))
+            return
+        }
+        speedTesting = true
+        option.speed.text = "…"
+        option.speed.visibility = View.VISIBLE
+        Thread({
+            // finally 保证无论结果如何都复位互斥标志，避免测速永久卡死
+            try {
+                val result = measureMirrorSpeed(preset)
+                runOnUiThread { if (isActive()) option.speed.text = result }
+            } finally {
+                runOnUiThread { speedTesting = false }
+            }
+        }, "mirror-speed-single").start()
+    }
+
+    /** 镜像测速：以固定 commit 引用的基准图标文件并发测全部候选并逐行回显耗时
+     *  引用必须是 commit SHA——jsDelivr 的分支引用对本仓库这样的大文件树回源失败 */
+    private fun testMirrorSpeeds(button: MaterialButton) {
+        if (speedTesting || mirrorOptions.isEmpty()) {
+            if (speedTesting) message(getString(R.string.network_mirror_speed_running))
+            return
+        }
+        speedTesting = true
+        button.isEnabled = false
+        button.text = getString(R.string.network_mirror_speed_running)
+        mirrorOptions.forEach { (_, option) ->
+            option.speed.text = "…"
+            option.speed.visibility = View.VISIBLE
+        }
+        val executor = Executors.newFixedThreadPool(6)
+        val remaining = java.util.concurrent.atomic.AtomicInteger(mirrorOptions.size)
+        mirrorOptions.forEach { (preset, option) ->
+            executor.execute {
+                // finally 保证互斥标志与按钮状态无论结果如何都复位
+                try {
+                    val result = measureMirrorSpeed(preset)
+                    runOnUiThread { if (isActive()) option.speed.text = result }
+                } finally {
+                    if (remaining.decrementAndGet() == 0) {
+                        runOnUiThread {
+                            speedTesting = false
+                            if (isActive()) {
+                                button.isEnabled = true
+                                button.text = getString(R.string.network_mirror_speed)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        executor.shutdown()
+    }
+
+    /** 单个候选测速：下载基准文件并计时，校验 PNG 魔数防止把镜像错误页计入成功 */
+    private fun measureMirrorSpeed(preset: MirrorPreset): String {
+        val apiBase = customBase(preset.id, preset.apiBase, settings.mirrorCustomApi, GitHubEndpoint.API_DEFAULT)
+        val rawBase = customBase(preset.id, preset.rawBase, settings.mirrorCustomRaw, GitHubEndpoint.RAW_DEFAULT)
+        val url = GitHubEndpoint(apiBase = apiBase, rawBase = rawBase).rawUrl(SPEED_TEST_COMMIT, SPEED_TEST_PATH)
+        var connection: HttpURLConnection? = null
+        return try {
+            val start = android.os.SystemClock.elapsedRealtime()
+            connection = (URL(url).openConnection() as HttpURLConnection).apply {
+                connectTimeout = 6000
+                readTimeout = 8000
+                instanceFollowRedirects = true
+            }
+            if (connection.responseCode != 200) return getString(R.string.network_mirror_speed_failed)
+            var total = 0L
+            val head = ByteArray(8)
+            val buffer = ByteArray(8192)
+            connection.inputStream.use { input ->
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    if (total < head.size) {
+                        val copy = minOf(count, head.size - total.toInt())
+                        System.arraycopy(buffer, 0, head, total.toInt(), copy)
+                    }
+                    total += count
+                }
+            }
+            if (total < head.size || !head.contentEquals(PNG_SIGNATURE)) return getString(R.string.network_mirror_speed_failed)
+            val seconds = (android.os.SystemClock.elapsedRealtime() - start) / 1000.0
+            getString(R.string.network_mirror_speed_result, String.format(Locale.ROOT, "%.1f", seconds))
+        } catch (_: java.net.SocketTimeoutException) {
+            getString(R.string.network_mirror_speed_timeout)
+        } catch (_: Exception) {
+            getString(R.string.network_mirror_speed_failed)
+        } finally {
+            connection?.disconnect()
+        }
+    }
+
+    /** 自定义预设取用户填写的地址，留空或非法部分回退对应的官方地址 */
+    private fun customBase(presetId: String, presetBase: String?, custom: String?, official: String): String =
+        if (presetId == MirrorPresets.custom.id) GitHubEndpoint.normalize(custom.orEmpty()) ?: official
+        else presetBase ?: official
+
+    /** 令牌编辑：保存前经官方 API 实测令牌有效性，验证失败时提供“仍要保存”兜底 */
+    private fun editToken() {
+        val input = DialogTextInputBinding.inflate(layoutInflater)
+        input.inputLayout.hint = getString(R.string.network_token_hint)
+        input.input.setText(settings.githubToken.orEmpty())
+        input.input.requestFocus()
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.network_token_dialog_title)
+            .setView(input.root)
+            .setNegativeButton(R.string.btn_cancel, null)
+            .setNeutralButton(R.string.network_token_clear) { _, _ ->
+                settings.githubToken = null
+                showNetwork()
+            }
+            .setPositiveButton(R.string.btn_save) { _, _ ->
+                val token = input.input.text?.toString()?.trim().orEmpty()
+                if (token.isEmpty()) {
+                    settings.githubToken = null
+                    showNetwork()
+                } else verifyToken(token)
+            }
+            .show()
+    }
+
+    private fun verifyToken(token: String) {
+        val cancelled = java.util.concurrent.atomic.AtomicBoolean(false)
+        // 居中显示 Material 加载动画，避免全宽进度条挤压对话框内容
+        val progress = android.widget.FrameLayout(this).apply {
+            minimumHeight = dp(88)
+            addView(
+                com.google.android.material.loadingindicator.LoadingIndicator(this@FeatureActivity),
+                android.widget.FrameLayout.LayoutParams(
+                    android.widget.FrameLayout.LayoutParams.WRAP_CONTENT,
+                    android.widget.FrameLayout.LayoutParams.WRAP_CONTENT,
+                    android.view.Gravity.CENTER,
+                ),
+            )
+        }
+        val verifying = MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.network_token_verifying)
+            .setView(progress)
+            .setCancelable(true)
+            .setOnCancelListener { cancelled.set(true) }
+            .setNegativeButton(R.string.btn_cancel) { _, _ -> cancelled.set(true) }
+            .setPositiveButton(R.string.network_token_skip_verify) { _, _ ->
+                cancelled.set(true)
+                settings.githubToken = token
+                showNetwork()
+                message(getString(R.string.network_token_saved_unverified))
+            }
+            .show()
+        tokenChecks.execute {
+            // 验证请求直连官方 API 且仅带新令牌，避免镜像与旧令牌干扰验证结论
+            val probe = File(cacheDir, "token-verify-${UUID.randomUUID()}")
+            val error: String? = try {
+                GitHubRepository(probe, ensureActive = {
+                    if (cancelled.get() || Thread.currentThread().isInterrupted) throw InterruptedException()
+                }, endpoint = GitHubEndpoint(token)).verifyToken()
+                null
+            } catch (error: Exception) {
+                error.message ?: getString(R.string.network_token_verify_failed)
+            } finally {
+                probe.deleteRecursively()
+            }
+            runOnUiThread {
+                if (isActive()) {
+                    verifying.dismiss()
+                    // 取消或跳过后不再处理异步验证结果
+                    if (cancelled.get()) return@runOnUiThread
+                    if (error == null) {
+                        settings.githubToken = token
+                        showNetwork()
+                        message(getString(R.string.network_token_saved))
+                    } else {
+                        MaterialAlertDialogBuilder(this)
+                            .setTitle(R.string.network_token_verify_failed)
+                            .setMessage(error)
+                            .setNegativeButton(R.string.btn_cancel, null)
+                            .setPositiveButton(R.string.network_token_save_anyway) { _, _ ->
+                                settings.githubToken = token
+                                showNetwork()
+                            }
+                            .show()
+                    }
+                }
+            }
+        }
+    }
+
+
+    /** 自定义镜像前缀编辑：留空回退官方地址，非法输入当场拦截，API 与文件分别给对应形态的填写示例 */
+    private fun editMirrorPrefix(api: Boolean) {
+        val input = DialogTextInputBinding.inflate(layoutInflater)
+        input.inputLayout.hint = getString(if (api) R.string.network_mirror_api_row else R.string.network_mirror_raw_row)
+        input.input.inputType = android.text.InputType.TYPE_TEXT_VARIATION_URI
+        val current = if (api) settings.mirrorCustomApi else settings.mirrorCustomRaw
+        input.input.setText(current.orEmpty())
+        input.input.requestFocus()
+        MaterialAlertDialogBuilder(this)
+            .setTitle(getString(if (api) R.string.network_mirror_api_row else R.string.network_mirror_raw_row))
+            .setMessage(getString(if (api) R.string.network_mirror_api_hint else R.string.network_mirror_raw_hint))
+            .setView(input.root)
+            .setNegativeButton(R.string.btn_cancel, null)
+            .setPositiveButton(R.string.btn_save) { _, _ ->
+                val value = input.input.text?.toString()?.trim().orEmpty()
+                if (value.isEmpty()) {
+                    if (api) settings.mirrorCustomApi = null else settings.mirrorCustomRaw = null
+                    showNetwork()
+                    return@setPositiveButton
+                }
+                if (GitHubEndpoint.normalize(value) == null) {
+                    message(getString(R.string.network_mirror_invalid))
+                    return@setPositiveButton
+                }
+                if (api) settings.mirrorCustomApi = value else settings.mirrorCustomRaw = value
+                showNetwork()
+            }
+            .show()
     }
 
     private fun showDynamic() {
@@ -660,6 +979,12 @@ class FeatureActivity : AppCompatActivity() {
         const val DYNAMIC = "dynamic"
         const val APPS = "apps"
         const val UPDATES = "updates"
+        const val NETWORK = "network"
         const val ABOUT = "about"
+
+        /** 测速基准：固定 commit 引用的示例图标（710 字节） */
+        private const val SPEED_TEST_COMMIT = "fb8b5c9224510fedb653a7dceafdcb364b4e2263"
+        private const val SPEED_TEST_PATH = "addition/Icons_Addon/icons/miui.icons.example/0.png"
+        private val PNG_SIGNATURE = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
     }
 }
