@@ -253,8 +253,13 @@ class TaskService : Service() {
     private fun finishedNotification(kind: String, output: DocumentStorage.SavedFile?, failure: String?): android.app.Notification {
         val builder = NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(if (failure == null) android.R.drawable.stat_sys_download_done else android.R.drawable.stat_notify_error)
-            .setContentTitle(getString(if (failure == null) R.string.task_notify_done else R.string.task_notify_failed))
-            .setContentText(output?.label ?: failure ?: getString(R.string.task_notify_sync_done))
+            .setContentTitle(getString(if (failure != null) R.string.task_notify_failed else when (kind) {
+                MTZ -> R.string.task_notify_done_mtz
+                MODULE -> R.string.task_notify_done_module
+                ARCHIVE -> R.string.task_notify_done_archive
+                else -> R.string.task_notify_sync_done
+            }))
+            .setContentText(output?.label ?: failure)
             .setAutoCancel(true)
             .setContentIntent(if (output == null) mainPendingIntent() else PendingIntent.getActivity(
                 this, 3, Intent(Intent.ACTION_VIEW).setDataAndType(output.uri, output.mime).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION),

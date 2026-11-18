@@ -236,36 +236,38 @@
     <string name="licenses_project_meta">%1$s · %2$s</string>
 
     <!-- 任务：通知与状态 -->
-    <string name="task_channel">图标资源任务</string>
+    <string name="task_channel">后台任务</string>
     <string name="task_stage_preparing">准备中</string>
     <string name="task_stage_downloading">正在下载图标资源</string>
-    <string name="task_stage_assembling">正在装配</string>
-    <string name="task_stage_saving">正在保存产物</string>
+    <string name="task_stage_assembling">正在打包</string>
+    <string name="task_stage_saving">正在保存</string>
     <string name="task_stage_cancelled">已取消</string>
     <string name="task_stage_completed">已完成</string>
     <string name="task_stage_failed">任务失败</string>
     <string name="task_failed_generic">任务失败，请重试</string>
-    <string name="task_timeout">后台任务超时，请重试</string>
+    <string name="task_timeout">任务超时，请重试</string>
     <string name="task_notify_downloading">正在下载图标资源</string>
     <string name="task_notify_module">正在生成 Magisk 模块</string>
     <string name="task_notify_mtz">正在生成 MTZ 主题包</string>
     <string name="task_notify_archive">正在下载图标存档</string>
     <string name="task_notify_background">任务正在后台运行</string>
-    <string name="task_notify_done">图标资源任务已完成</string>
-    <string name="task_notify_failed">图标资源任务失败</string>
+    <string name="task_notify_done_mtz">MTZ 主题包已生成</string>
+    <string name="task_notify_done_module">Magisk 模块已生成</string>
+    <string name="task_notify_done_archive">图标存档已下载</string>
+    <string name="task_notify_failed">任务失败</string>
     <string name="task_notify_sync_done">图标资源已更新</string>
 
     <!-- 任务：执行状态 -->
     <string name="task_log_cancelling">正在取消任务…</string>
     <string name="task_log_cancelled">操作已取消</string>
     <string name="task_log_sync_done">图标资源已更新</string>
-    <string name="task_log_cache_used">正在使用已校验的本地缓存…</string>
-    <string name="task_log_archive_cache_used">正在使用已校验的图标存档缓存…</string>
+    <string name="task_log_cache_used">使用本地缓存…</string>
+    <string name="task_log_archive_cache_used">使用图标存档缓存…</string>
     <string name="task_log_archive_packing">正在打包图标存档…</string>
     <string name="task_log_saved_mtz">MTZ 主题包已保存至 %1$s</string>
     <string name="task_log_saved_module">模块已保存至 %1$s</string>
     <string name="task_log_saved_archive">图标存档已下载到 %1$s</string>
-    <string name="task_log_mtz_warning">需要设计师账号或主题破解才能导入并使用。</string>
+    <string name="task_log_mtz_warning">可能需要设计师账号或主题破解才能导入并使用</string>
     <string name="task_error_archive_cache_incomplete">图标存档缓存不完整，请重新下载</string>
     <string name="task_error_archive_verify_failed">图标存档校验失败，请重新下载</string>
     <string name="task_error_cache_incomplete">本地缓存不完整，请重新下载资源</string>
@@ -287,6 +289,6 @@
     <string name="task_dialog_sync">下载图标资源</string>
     <string name="task_close">关闭</string>
     <string name="task_error_mask_missing">遮罩配置缺失，请重新下载资源</string>
-    <string name="task_rate_limit_message">GitHub API 限额已用完。是否使用已校验的本地缓存继续生成？</string>
+    <string name="task_rate_limit_message">GitHub API 限额已用完，是否使用本地缓存继续生成？</string>
     <string name="task_open_failed">没有可打开此文件的应用，请在文件管理器中查看</string>
 </resources>

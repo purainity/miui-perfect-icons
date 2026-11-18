@@ -17,6 +17,7 @@ listOf("Debug", "Release").forEach { variant ->
         else -> "Signing properties are not fully configured, release builds will be unsigned"
     }
     val reportSigning = tasks.register("report${variant}Signing") {
+        description = "Reports the signing configuration status for ${variant.lowercase()} builds"
         doLast { logger.lifecycle(message) }
     }
     tasks.matching { it.name == "package$variant" }.configureEach {
@@ -46,8 +47,8 @@ android {
         applicationId = "me.purainity.miuiperfecticons"
         minSdk = 29
         targetSdk = 37
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 3
+        versionName = "1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
