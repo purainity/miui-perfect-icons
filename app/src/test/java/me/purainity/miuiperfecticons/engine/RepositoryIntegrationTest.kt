@@ -21,7 +21,7 @@ class RepositoryIntegrationTest {
         val source = System.getenv("PERFECT_ICONS_SOURCE")?.let(::File)
         assumeTrue(source != null && File(source, "icons").isDirectory && File(source, "themes/explore").isDirectory)
         val repo = source!!
-        // 遮罩模板以 docs 内的原版拷贝为源（不再内置 assets，随资源同步取仓库缓存）；安装脚本仍以 assets 为源
+        // 预期遮罩以原版拷贝为基准，装配实际读取仓库文件；模块脚本从 assets 读取
         val masks = File("../docs/original-app-scripts/local-scripts/misc")
         val scripts = File("src/main/assets")
         assertTrue(masks.isDirectory)
@@ -46,7 +46,7 @@ class RepositoryIntegrationTest {
         layered["transform_config.xml"] = File(masks, "transform_config1.xml")
         assertTrue(layered.size > 1000)
         assertTrue(flat.isNotEmpty())
-        val assembler = PackageAssembler(template = { File(masks, it).readBytes() })
+        val assembler = PackageAssembler(moduleTemplate = { File(scripts, it).readBytes() })
         for (format in PackageFormat.entries) {
             val output = File(temporary.root, "$format.zip")
             val options = AssemblyOptions(
@@ -82,7 +82,13 @@ class RepositoryIntegrationTest {
                         assertTrue("缺少扁平图标：$name", entry != null)
                         assertArrayEquals(file.readBytes(), outer.getInputStream(entry).readBytes())
                     }
-                    assertArrayEquals(File(scripts, "customize.sh").readBytes(), outer.getInputStream(outer.getEntry("customize.sh")).readBytes())
+                    listOf(
+                        "customize.sh" to "customize.sh",
+                        "post-fs-data.sh" to "post-fs-data.sh",
+                        "update-binary" to "META-INF/com/google/android/update-binary",
+                    ).forEach { (source, path) ->
+                        assertArrayEquals(File(scripts, source).readBytes(), outer.getInputStream(outer.getEntry(path)).readBytes())
+                    }
                     assertEquals("#MAGISK\n", outer.getInputStream(outer.getEntry("META-INF/com/google/android/updater-script")).reader().readText())
                 } else {
                     assertTrue(outer.entries().toList().none { it.name.startsWith("miui_mod_icons") })

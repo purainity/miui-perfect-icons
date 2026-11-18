@@ -382,7 +382,7 @@ description.xml（仓库模板，`uiVersion=10`，title 为 `themename&MIUI完�
 - **V1（MIUI 12–14）**：`SupportLayerIcon=true` + `ConfigIconMask`，全文见仓库 `addition/transform_config.xml`（与原版 assets 逐字节一致）
 - **V2（HyperOS）**：`SupportLayerIcon=true` + `UseDynamicIcon=true` + `ConfigIconMask`，全文见仓库 `addition/transform_config2.xml`
 - **默认值**：按 `ro.miui.ui.version.code` 推断：≤ 14 → V1（关），> 14 → V2（开）。通过 `android.os.SystemProperties` 反射读取；失败时默认 V1（关），并在开关副标题提示用户自行确认
-- **模板来源策略**：两个遮罩 xml 在资源下载清单内（§4.1），装配直接读仓库缓存，模板单一来源（不内置 APK）；缓存中遮罩缺失时装配报错“遮罩配置缺失，请重新下载资源”。`customize.sh`、`post-fs-data.sh`、`update-binary` 三个模块模板在仓库中不存在对应物（仓库 `addition/module/` 是原版服务端打包骨架，与原版 `module.sh` heredoc 生成的模板不同源），必须随 APK 内置——这也是断网或无缓存时离线装配的唯一模板来源（本地有完整资源快照时装配全程不联网，遮罩随快照携带）
+- **模板来源策略**：两个遮罩 xml 在资源下载清单内（§4.1），装配直接读仓库缓存，模板单一来源（不内置 APK）；缓存中遮罩缺失时装配报错“遮罩配置缺失，请重新下载资源”。`customize.sh`、`post-fs-data.sh`、`update-binary` 三个模块模板在仓库中不存在对应物（仓库 `addition/module/` 是原版服务端打包骨架，与原版 `module.sh` heredoc 生成的模板不同源），必须随 APK 内置；模块装配分别从仓库缓存读取所选遮罩、从 APK 内置资源读取三个安装脚本，不能将脚本当作遮罩读取或报告遮罩缺失。MTZ 不读取模块安装脚本。本地有完整资源快照时，两种装配均可全程离线进行
 
 ### 6.4 验收口径
 

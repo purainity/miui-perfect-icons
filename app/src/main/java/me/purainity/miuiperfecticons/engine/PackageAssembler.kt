@@ -25,8 +25,11 @@ data class AssemblyOptions(
 
 enum class PackageFormat { MTZ, MODULE }
 
+/** 资源缓存中缺少本次装配所需的遮罩文件 */
+class MaskMissingException : IOException()
+
 class PackageAssembler(
-    private val template: (String) -> ByteArray,
+    private val moduleTemplate: (String) -> ByteArray,
     private val ensureActive: () -> Unit = {},
     private val log: (String) -> Unit = {},
 ) {
@@ -71,9 +74,11 @@ class PackageAssembler(
                     if (target.exists() && !target.deleteRecursively()) throw IOException("无法删除动态图标：$name")
                 }
             }
-            File(iconDir, "transform_config.xml").writeBytes(
-                template(if (options.useNewMask) "transform_config2.xml" else "transform_config1.xml"),
-            )
+            // 遮罩只从仓库缓存读取，模块脚本另从 APK 内置模板读取
+            val maskName = if (options.useNewMask) "transform_config2.xml" else "transform_config.xml"
+            val mask = File(repo, "addition/$maskName")
+            if (!mask.isFile) throw MaskMissingException()
+            File(iconDir, "transform_config.xml").writeBytes(mask.readBytes())
             options.customIcons?.let { custom ->
                 require(custom.isDirectory) { "自定义图标目录不可访问" }
                 log("正在导入自定义图标…")
@@ -143,11 +148,11 @@ class PackageAssembler(
                         "description=使用${options.theme.assemblyName}并补全MIUI完美图标\n" +
                         "version=$date\ntheme=${options.theme.assemblyName}\nthemeid=${options.theme.id}\n",
                 )
-                listOf("post-fs-data.sh", "customize.sh").forEach { File(resultDir, it).writeBytes(template(it)) }
+                listOf("post-fs-data.sh", "customize.sh").forEach { File(resultDir, it).writeBytes(moduleTemplate(it)) }
                 val meta = File(resultDir, "META-INF/com/google/android")
                 meta.mkdirsOrThrow()
                 File(meta, "updater-script").writeText("#MAGISK\n")
-                File(meta, "update-binary").writeBytes(template("update-binary"))
+                File(meta, "update-binary").writeBytes(moduleTemplate("update-binary"))
             }
             log("正在打包产物…")
             zipContents(resultDir, output)

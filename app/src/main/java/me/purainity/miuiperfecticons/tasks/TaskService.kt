@@ -18,6 +18,7 @@ import me.purainity.miuiperfecticons.engine.ArchivePacker
 import me.purainity.miuiperfecticons.engine.AssemblyOptions
 import me.purainity.miuiperfecticons.engine.DocumentStorage
 import me.purainity.miuiperfecticons.engine.GitHubRepository
+import me.purainity.miuiperfecticons.engine.MaskMissingException
 import me.purainity.miuiperfecticons.engine.PackageAssembler
 import me.purainity.miuiperfecticons.engine.PackageFormat
 import me.purainity.miuiperfecticons.engine.RateLimitException
@@ -75,7 +76,8 @@ class TaskService : Service() {
                 cancelled = true
                 TaskRuntime.status(getString(R.string.task_log_cancelled))
             } catch (error: Exception) {
-                failure = error.message ?: getString(R.string.task_failed_generic)
+                failure = if (error is MaskMissingException) getString(R.string.task_error_mask_missing)
+                else error.message ?: getString(R.string.task_failed_generic)
                 TaskRuntime.status(failure)
                 if (error is RateLimitException && kind in setOf(MTZ, MODULE)) {
                     try {
@@ -204,14 +206,11 @@ class TaskService : Service() {
                 try {
                     val format = if (kind == MTZ) PackageFormat.MTZ else PackageFormat.MODULE
                     val options = AssemblyOptions(theme, newMask, disableAll, disabledPackages, custom, format, date)
-                    // 遮罩模板取仓库缓存文件（随资源同步下载），仓库中的 V1 文件名与模板名不同
-                    val maskLoader: (String) -> ByteArray = { name ->
-                        val repoName = if (name == "transform_config1.xml") "transform_config.xml" else name
-                        val repoFile = File(repo.files, "addition/$repoName")
-                        if (!repoFile.isFile) throw IOException(getString(R.string.task_error_mask_missing))
-                        repoFile.readBytes()
+                    // 遮罩由装配器读取仓库缓存，模块安装脚本从 APK 内置资源读取
+                    val moduleTemplate: (String) -> ByteArray = { name ->
+                        assets.open(name).use { input -> input.readBytes() }
                     }
-                    PackageAssembler(maskLoader, TaskRuntime::ensureActive, TaskRuntime::status)
+                    PackageAssembler(moduleTemplate, TaskRuntime::ensureActive, TaskRuntime::status)
                         .assemble(repo.files, work, result, options)
                 } finally {
                     custom?.deleteRecursively()

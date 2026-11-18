@@ -222,9 +222,8 @@ class GitHubRepositoryRegressionTest {
             val directory = temporary.newFolder()
             val repo = GitHubRepository(directory, endpoint = sources.mirror, trustedEndpoint = sources.trusted)
             repo.synchronize("default")
-            val assembler = PackageAssembler(template = { name ->
-                val file = if (name == "transform_config1.xml") "transform_config.xml" else name
-                File(repo.files, "addition/$file").takeIf { it.isFile }?.readBytes() ?: "template:$name".toByteArray()
+            val assembler = PackageAssembler(moduleTemplate = { name ->
+                File("src/main/assets", name).readBytes()
             })
             for (format in PackageFormat.entries) {
                 val output = File(directory, "${format.name}.zip")

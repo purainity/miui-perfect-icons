@@ -4,6 +4,7 @@ import me.purainity.miuiperfecticons.config.IconThemes
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -38,6 +39,8 @@ class PackageAssemblerTest {
         put("themes/common/layer_animating_icons/org.motion/config.xml", "common")
         put("themes/lrone/icons/org.flat.png", "lrone")
         put("themes/lrone/layer_animating_icons/org.motion/config.xml", "lrone")
+        put("addition/transform_config.xml", "mask-v1")
+        put("addition/transform_config2.xml", "mask-v2")
         put("addition/mtz/description.xml", "<title>themename</title>")
         put("addition/mtz/com.miui.home", "test")
         put("addition/mtz/preview/preview.png", "preview")
@@ -93,7 +96,7 @@ class PackageAssemblerTest {
         timestamp = Date(0),
     )
 
-    private fun assembler() = PackageAssembler(template = { "template:$it".toByteArray() })
+    private fun assembler() = PackageAssembler(moduleTemplate = { "template:$it".toByteArray() })
 
     private fun nested(bytes: ByteArray): Map<String, String> {
         val result = mutableMapOf<String, String>()
@@ -117,11 +120,82 @@ class PackageAssemblerTest {
             assertEquals("common", icons["layer_animating_icons/org.motion/config.xml"])
             assertFalse(icons.containsKey("res/drawable-xxhdpi/org.flat.png"))
             assertEquals("flat", zip.getInputStream(zip.getEntry("miui_mod_icons/org.flat.png")).reader().readText())
-            assertEquals("template:transform_config2.xml", icons["transform_config.xml"])
+            assertEquals("mask-v2", icons["transform_config.xml"])
             assertTrue(zip.getInputStream(zip.getEntry("module.prop")).reader().readText().contains("themeid=default\n"))
             assertEquals("#MAGISK\n", zip.getInputStream(zip.getEntry("META-INF/com/google/android/updater-script")).reader().readText())
         }
         assertFalse(temporary.root.resolve("work").exists())
+    }
+
+    @Test fun bothFormatsUseCachedMasksAndOnlyModulesUseEmbeddedScripts() {
+        val repo = fixture()
+        val scripts = File("src/main/assets")
+        val scriptPaths = mapOf(
+            "post-fs-data.sh" to "post-fs-data.sh",
+            "customize.sh" to "customize.sh",
+            "update-binary" to "META-INF/com/google/android/update-binary",
+        )
+        val requestedScripts = mutableListOf<String>()
+        val assembler = PackageAssembler(moduleTemplate = { name ->
+            requestedScripts.add(name)
+            File(scripts, name).readBytes()
+        })
+        for (format in PackageFormat.entries) {
+            for (newMask in listOf(false, true)) {
+                requestedScripts.clear()
+                val output = temporary.root.resolve("$format-$newMask.zip")
+                assembler.assemble(repo, temporary.root.resolve("work-$format-$newMask"), output,
+                    options(format).copy(useNewMask = newMask))
+                ZipFile(output).use { zip ->
+                    val icons = nested(zip.getInputStream(zip.getEntry("icons")).readBytes())
+                    assertEquals(if (newMask) "mask-v2" else "mask-v1", icons["transform_config.xml"])
+                    if (format == PackageFormat.MODULE) {
+                        assertEquals(scriptPaths.keys, requestedScripts.toSet())
+                        assertEquals(scriptPaths.size, requestedScripts.size)
+                        scriptPaths.forEach { (name, path) ->
+                            assertArrayEquals(File(scripts, name).readBytes(), zip.getInputStream(zip.getEntry(path)).readBytes())
+                        }
+                    } else {
+                        assertTrue(requestedScripts.isEmpty())
+                    }
+                }
+            }
+        }
+    }
+
+    @Test fun missingSelectedMaskFailsBothFormatsWithoutLoadingScripts() {
+        val repo = fixture()
+        for (newMask in listOf(false, true)) {
+            val name = if (newMask) "transform_config2.xml" else "transform_config.xml"
+            val mask = File(repo, "addition/$name")
+            val contents = mask.readBytes()
+            assertTrue(mask.delete())
+            for (format in PackageFormat.entries) {
+                val output = temporary.root.resolve("$format-$newMask.zip")
+                val work = temporary.root.resolve("work-$format-$newMask")
+                val assembler = PackageAssembler(moduleTemplate = { throw AssertionError("不应加载模块脚本") })
+                assertThrows(MaskMissingException::class.java) {
+                    assembler.assemble(repo, work, output, options(format).copy(useNewMask = newMask))
+                }
+                assertFalse(output.exists())
+                assertFalse(work.exists())
+            }
+            mask.writeBytes(contents)
+        }
+    }
+
+    @Test fun moduleScriptFailureIsNotReportedAsMissingMask() {
+        val repo = fixture()
+        val output = temporary.root.resolve("module.zip")
+        val work = temporary.root.resolve("work")
+        val assembler = PackageAssembler(moduleTemplate = { throw IOException("模块脚本不可读取") })
+        val error = assertThrows(IOException::class.java) {
+            assembler.assemble(repo, work, output, options(PackageFormat.MODULE))
+        }
+        assertEquals("模块脚本不可读取", error.message)
+        assertFalse(error is MaskMissingException)
+        assertFalse(output.exists())
+        assertFalse(work.exists())
     }
 
     @Test fun mtzKeepsFlatIconsInsideIconsAndCustomDynamicSurvivesDenyAll() {
@@ -265,7 +339,7 @@ class PackageAssemblerTest {
         val repo = fixture()
         val output = temporary.root.resolve("module.zip")
         var calls = 0
-        val assembler = PackageAssembler(template = { byteArrayOf() }, ensureActive = {
+        val assembler = PackageAssembler(moduleTemplate = { byteArrayOf() }, ensureActive = {
             if (++calls > 3) throw InterruptedException()
         })
         try {
